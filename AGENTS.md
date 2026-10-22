@@ -7,3 +7,115 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+# Development Guide & Project Instructions
+
+## Tech Stack
+- **Framework:** Next.js 16 (App Router)
+- **UI & Styling:** React 19, Tailwind CSS v4
+- **Backend & Auth:** Supabase (`@supabase/supabase-js`, `@supabase/ssr`, Supabase CLI)
+- **Language:** TypeScript
+
+---
+
+## General Setup Instructions
+
+### 1. Prerequisites
+- **Node.js** (v20+ recommended) and `npm`
+- **Docker Desktop** (must be running for local Supabase development)
+- **Supabase CLI** (installed via Homebrew: `brew install supabase/tap/supabase` or npm)
+
+### 2. Install Dependencies
+```bash
+npm install
+```
+
+### 3. Run the Development Server
+```bash
+npm run dev
+```
+Open [http://localhost:3000](http://localhost:3000) to view the application.
+
+### 4. Code Quality & Verification
+Always run these checks before submitting PRs or commits:
+```bash
+# Type check without emitting files
+npx tsc --noEmit
+
+# Lint check
+npm run lint
+
+# Production build check
+npm run build
+```
+
+---
+
+## Supabase Local Development
+
+### 1. Architecture & Conventions
+In this project, Supabase utilities are placed in `lib/supabase/` (not `utils/`):
+- `lib/supabase/client.ts`: Supabase client for Client Components (`createBrowserClient`).
+- `lib/supabase/server.ts`: Supabase client for Server Components, Server Actions, and Route Handlers (`createServerClient` with `await cookies()`).
+- `lib/supabase/proxy.ts` and `proxy.ts`: Next.js 16 Proxy layer for automatic session token refreshing using `supabase.auth.getClaims()` and cookie forwarding. *(Note: Next.js 16 renamed `middleware.ts` to `proxy.ts`)*.
+
+### 2. Starting Local Supabase
+Ensure Docker Desktop is running, then run:
+```bash
+supabase start
+```
+This starts local Postgres, Auth, Storage, Studio, and Mailpit containers.
+
+Local services:
+- **Studio (Local Dashboard):** [http://127.0.0.1:54323](http://127.0.0.1:54323)
+- **Mailpit (Email Testing):** [http://127.0.0.1:54324](http://127.0.0.1:54324)
+- **REST API:** `http://127.0.0.1:54321`
+- **Postgres Database:** `postgresql://postgres:postgres@127.0.0.1:54322/postgres`
+
+To view credentials and service status at any time:
+```bash
+supabase status
+```
+
+To stop local Supabase containers when done:
+```bash
+supabase stop
+```
+
+### 3. Environment Variables (`.env.local`)
+Create or verify `.env.local` in the project root:
+
+**For local Docker development:**
+```env
+NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<local-publishable-key-from-supabase-status>
+```
+
+**For hosted cloud project development:**
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<cloud-publishable-key>
+```
+
+*(Note: `.env*` is gitignored to prevent accidental credential commits.)*
+
+### 4. Migrations & Cloud Synchronization
+The project is configured to link to the team's cloud Supabase project (`mzpezwwwybwuqdngrgap`).
+
+| Task | Command |
+| :--- | :--- |
+| **Pull schema from cloud** | `supabase db pull` |
+| **Apply migrations to local DB** | `supabase db reset` |
+| **Create blank migration** | `supabase migration new <migration_name>` |
+| **Generate migration from local Studio edits** | `supabase db diff -f <migration_name>` |
+| **Push migrations to cloud** | `supabase db push` |
+| **Generate TypeScript types** | `supabase gen types typescript --local > types/database.types.ts` |
+
+---
+
+## Secrets, Permissions & Contacting Ethan
+
+Reach out to **Ethan** if you need:
+- **Cloud Project Access:** An invite to the team's Supabase organization for project `mzpezwwwybwuqdngrgap` so you can run `supabase link` and push/pull migrations.
+- **Secrets & API Keys:** Supabase service role keys (`SUPABASE_SECRET_KEY`), database passwords, or third-party API credentials needed for staging or production.
+- **Architectural & Schema Questions:** Database schema design decisions, permission/RLS policies, or questions about the overall infrastructure.
