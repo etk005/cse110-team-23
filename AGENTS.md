@@ -12,7 +12,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## Tech Stack
 - **Framework:** Next.js 16 (App Router)
-- **UI & Styling:** React 19, Tailwind CSS v4
+- **UI & Styling:** React 19, Tailwind CSS v4, shadcn/ui (`base-nova` preset, Lucide icons)
 - **Backend & Auth:** Supabase (`@supabase/supabase-js`, `@supabase/ssr`, Supabase CLI)
 - **Language:** TypeScript
 
@@ -47,6 +47,22 @@ npm run lint
 
 # Production build check
 npm run build
+```
+
+---
+
+## UI Components (shadcn/ui)
+
+This project is configured with the latest **shadcn/ui** with native **Tailwind CSS v4** support:
+- Configuration: `components.json`
+- UI Components: `components/ui/`
+- Helper utilities: `lib/shadcn-ui.ts` (`cn`)
+
+To add new shadcn components:
+```bash
+npx shadcn@latest add <component-name>
+# Example:
+npx shadcn@latest add dialog dropdown-menu input card
 ```
 
 ---
