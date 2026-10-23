@@ -23,19 +23,6 @@
 # misc
 .DS_Store
 *.pem
-Thumbs.db
-
-# IDEs
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# supabase
-.branches
-.temp
-supabase/.temp/
-supabase/.branches/
 
 # debug
 npm-debug.log*
