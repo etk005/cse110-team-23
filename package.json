@@ -9,9 +9,12 @@
     "preview": "vite preview",
     "supabase:start": "supabase start",
     "supabase:stop": "supabase stop",
-    "supabase:status": "supabase status"
+    "supabase:status": "supabase status",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "devDependencies": {
+    "prettier": "^3.9.10",
     "supabase": "^2.121.0",
     "typescript": "~6.0.3",
     "vite": "^8.3.4"

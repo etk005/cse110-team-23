@@ -1,6 +1,7 @@
 # Developer & Agent Setup Guide
 
 ## Stack Overview
+
 - **Frontend:** [Vite](https://vite.dev/) (Vanilla TypeScript)
 - **Canvas:** [Konva.js](https://konvajs.org/)
 - **Backend / Database:** [Supabase](https://supabase.com/) (PostgreSQL, Auth, Realtime, Storage)
@@ -8,6 +9,7 @@
 ---
 
 ## Prerequisites
+
 - **Node.js:** `v20+`
 - **Docker:** Must be running locally (for Supabase containers)
 - **Supabase CLI:** `supabase` (`npx supabase` or `brew install supabase/tap/supabase`)
@@ -36,14 +38,16 @@ npm run dev
 
 ## Key Commands
 
-| Command | Action |
-| :--- | :--- |
-| `npm run dev` | Start Vite development server (`http://localhost:5173`) |
-| `npm run build` | Run TypeScript checks and production build |
-| `npm run preview` | Preview production build |
-| `npm run supabase:start` | Start local Supabase Docker containers |
-| `npm run supabase:stop` | Stop local Supabase containers |
-| `npm run supabase:status` | Show local endpoints, Studio URL, and API keys |
+| Command                   | Action                                                  |
+| :------------------------ | :------------------------------------------------------ |
+| `npm run dev`             | Start Vite development server (`http://localhost:5173`) |
+| `npm run build`           | Run TypeScript checks and production build              |
+| `npm run preview`         | Preview production build                                |
+| `npm run supabase:start`  | Start local Supabase Docker containers                  |
+| `npm run supabase:stop`   | Stop local Supabase containers                          |
+| `npm run supabase:status` | Show local endpoints, Studio URL, and API keys          |
+| `npm run format`          | Format code with Prettier                               |
+| `npm run format:check`    | Check code formatting without writing changes           |
 
 ---
 
