@@ -42,6 +42,7 @@ npm run dev
 | :------------------------ | :------------------------------------------------------ |
 | `npm run dev`             | Start Vite development server (`http://localhost:5173`) |
 | `npm run build`           | Run TypeScript checks and production build              |
+| `npm run typecheck`       | Run TypeScript type checking without emitting files     |
 | `npm run preview`         | Preview production build                                |
 | `npm run supabase:start`  | Start local Supabase Docker containers                  |
 | `npm run supabase:stop`   | Stop local Supabase containers                          |
