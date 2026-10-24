@@ -3,7 +3,6 @@ import Konva from "konva";
 const HEIGHT_BUFFER = 1;
 
 // https://konvajs.org/docs/sandbox/Editable_Text.html
-// TODO: Split into observer
 export default class EditableText extends Konva.Text {
   private textarea: HTMLTextAreaElement;
 
@@ -52,8 +51,8 @@ export default class EditableText extends Konva.Text {
 
     const absRect = stage.container().getBoundingClientRect();
     const relPos = this.getAbsoluteTransform().point({ x: 0, y: 0 });
-    this.textarea.style.top = `${absRect.top + relPos.y}px`;
-    this.textarea.style.left = `${absRect.left + relPos.x}px`;
+    this.textarea.style.top = `${Math.round(absRect.top + relPos.y)}px`;
+    this.textarea.style.left = `${Math.round(absRect.left + relPos.x)}px`;
   }
 
   private refreshSize(): void {
