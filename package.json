@@ -1,26 +1,33 @@
 {
-  "name": "cse110-team-23",
-  "version": "1.0.0",
-  "type": "module",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/etk005/cse110-team-23.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/etk005/cse110-team-23/issues"
-  },
-  "homepage": "https://github.com/etk005/cse110-team-23#readme",
-  "devDependencies": {
-    "@types/node": "^26.6.5",
-    "typescript": "^7.0.2",
-    "vitest": "^5.0.5"
-  }
+    "name": "cse110-team-23",
+    "version": "1.0.0",
+    "type": "module",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "dev": "vite",
+        "build": "tsc --noEmit && vite build",
+        "preview": "vite preview",
+        "test": "vitest"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/etk005/cse110-team-23.git"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/etk005/cse110-team-23/issues"
+    },
+    "homepage": "https://github.com/etk005/cse110-team-23#readme",
+    "devDependencies": {
+        "@types/node": "^26.6.5",
+        "typescript": "^7.0.2",
+        "vite": "^8.3.5",
+        "vitest": "^5.0.5"
+    },
+    "dependencies": {
+        "konva": "^10.9.0"
+    }
 }
