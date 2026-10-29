@@ -39,9 +39,9 @@ export default class View {
       offsetX: -2,
       offsetY: -2,
     });
-    emailText.on("dblclick dbltap", () => {
-      emailText.focus();
-    });
+    // emailText.on("dblclick dbltap", () => {
+    //   emailText.focus();
+    // });
     email.add(emailText);
     group.add(email);
 
@@ -65,9 +65,9 @@ export default class View {
       offsetX: -2,
       offsetY: -2,
     });
-    passwordText.on("dblclick dbltap", () => {
-      passwordText.focus();
-    });
+    // passwordText.on("dblclick dbltap", () => {
+    //   passwordText.focus();
+    // });
     password.add(passwordText);
     group.add(password);
 

@@ -39,6 +39,30 @@ export default class EditableText extends Konva.Text {
         this.refreshTextStyle();
       },
     );
+
+    let start: number | null = null;
+    this.on("mousedown", (e) => {
+      e.evt.preventDefault();
+      this.focus();
+
+      const pos = document.caretPositionFromPoint(e.evt.clientX, e.evt.clientY);
+      if (pos === null) return;
+
+      start = pos.offset;
+      this.textarea.setSelectionRange(start, start);
+    });
+    this.textarea.addEventListener("mousemove", (e) => {
+      if (start === null) return;
+      
+      const pos = document.caretPositionFromPoint(e.clientX, e.clientY);
+      if (pos === null) return;
+
+      const end = pos.offset;
+      this.textarea.setSelectionRange(Math.min(start, end), Math.max(start, end));
+    });
+    document.addEventListener("mouseup", () => {
+      start = null;
+    });
   }
 
   private refreshText(): void {
