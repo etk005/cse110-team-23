@@ -16,8 +16,8 @@ export interface Card {
 export interface KnownInformation {
   id: string;
   description: string;
-  property: "suit" | "rank" | "color";
-  operator: "equals" | "not_equals";
+  property: "suit" | "rank" | "color" | "parity" | "category";
+  operator: "equals" | "not_equals" | "less_than" | "greater_than";
   value: string;
 }
 
