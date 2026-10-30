@@ -29,13 +29,11 @@ describe("Game state", () => {
         );
     });
 
-    it("only includes possible cards from the original deck", () => {
-        const deckIds = new Set(
-            mockGameState.deck.map((card) => card.id)
+    it("keeps remaining possible cards consistent with the known clue", () => {
+        const expectedCards = mockGameState.deck.filter(
+            (card) => card.suit === "hearts"
         );
-
-        for (const card of mockGameState.remainingPossibleCards) {
-            expect(deckIds.has(card.id)).toBe(true);
-        }
+    
+        expect(mockGameState.remainingPossibleCards).toEqual(expectedCards);
     });
 });
