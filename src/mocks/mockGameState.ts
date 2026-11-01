@@ -24,8 +24,14 @@ export const mockGameState: GameState = {
             operator: "equals",
             value: "hearts",
         },
+        {
+            id: "info-2",
+            description: "The hidden card is not a 4.",
+            property: "rank",
+            operator: "not_equals",
+            value: "4",
+        },
     ],
-
     // current probability question
     currentQuestion: {
         id: "question-1",

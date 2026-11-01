@@ -85,11 +85,18 @@ export class GameScreenModel {
             return false;
         }
 
-        const parts = answer.split("/");
+        // Accepts "1/4", "0.25", or "25%"
+        const text = answer.trim();
+        const parts = text.split("/");
 
-        const numericAnswer = parts.length === 2
-            ? Number(parts[0]) / Number(parts[1])
-            : Number(answer);
+        let numericAnswer: number;
+        if (text.endsWith("%")) {
+            numericAnswer = Number(text.slice(0, -1)) / 100;
+        } else if (parts.length === 2) {
+            numericAnswer = Number(parts[0]) / Number(parts[1]);
+        } else {
+            numericAnswer = Number(text);
+        }
 
         const correct = numericAnswer === this.getCorrectAnswer();
 

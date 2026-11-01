@@ -10,9 +10,9 @@ export class MenuScreenView implements View {
 
         const title = new Konva.Text({
             x: STAGE_WIDTH / 2,
-            y: 150,
+            y: 270,
             text: "PROBABILITY GAME",
-            fontSize: 44,
+            fontSize: 79,
             fontFamily: "Arial",
             fill: COLORS.text,
             align: "center",
@@ -23,9 +23,9 @@ export class MenuScreenView implements View {
 
         const subtitle = new Konva.Text({
             x: STAGE_WIDTH / 2,
-            y: 210,
+            y: 378,
             text: "Learn probability through cards and strategy",
-            fontSize: 20,
+            fontSize: 36,
             fontFamily: "Arial",
             fill: COLORS.accent,
             align: "center",
@@ -37,21 +37,21 @@ export class MenuScreenView implements View {
         const startButtonGroup = new Konva.Group();
 
         const startButton = new Konva.Rect({
-            x: STAGE_WIDTH / 2 - 100,
-            y: 300,
-            width: 200,
-            height: 60,
+            x: STAGE_WIDTH / 2 - 240,
+            y: 540,
+            width: 480,
+            height: 108,
             fill: COLORS.button,
-            cornerRadius: 10,
+            cornerRadius: 24,
             stroke: COLORS.buttonDark,
-            strokeWidth: 3,
+            strokeWidth: 7,
         });
 
         const startText = new Konva.Text({
             x: STAGE_WIDTH / 2,
-            y: 315,
+            y: 567,
             text: "START GAME",
-            fontSize: 24,
+            fontSize: 43,
             fontFamily: "Arial",
             fill: COLORS.text,
             align: "center",

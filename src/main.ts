@@ -15,11 +15,13 @@ class App implements ScreenSwitcher {
     private resultsController: ResultsScreenController;
 
     constructor(container: string) {
+        Konva.pixelRatio = window.devicePixelRatio;
         this.stage = new Konva.Stage({
             container,
             width: STAGE_WIDTH,
             height: STAGE_HEIGHT,
         });
+       
 
         this.layer = new Konva.Layer();
         this.stage.add(this.layer);
@@ -32,8 +34,33 @@ class App implements ScreenSwitcher {
         this.layer.add(this.gameController.getView().getGroup());
         this.layer.add(this.resultsController.getView().getGroup());
 
+        window.addEventListener("resize", () => this.fitStageToViewport());
+
         this.layer.draw();
+        this.fitStageToViewport();
         this.menuController.show();
+    }
+
+    private fitStageToViewport(): void {
+        const viewportWidth = document.documentElement.clientWidth;
+        const viewportHeight = document.documentElement.clientHeight;
+
+        const scale = Math.min(
+            viewportWidth / STAGE_WIDTH,
+            viewportHeight / STAGE_HEIGHT
+        );
+
+        const displayWidth = STAGE_WIDTH * scale;
+        const displayHeight = STAGE_HEIGHT * scale;
+
+        // The stage is the real on-screen size; scale() maps the 1920x1080
+        // design coordinates onto it. Do not also resize the canvas with CSS,
+        // or the drawing is shrunk twice and ends up off-center.
+        this.stage.width(displayWidth);
+        this.stage.height(displayHeight);
+        this.stage.scale({ x: scale, y: scale });
+
+        this.stage.batchDraw();
     }
 
     switchToScreen(screen: Screen): void {

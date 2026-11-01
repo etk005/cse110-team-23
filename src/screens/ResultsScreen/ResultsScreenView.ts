@@ -1,7 +1,10 @@
-
 import Konva from "konva";
 import type { View } from "../../types.ts";
-import { STAGE_WIDTH, STAGE_HEIGHT, COLORS } from "../../constants.ts";
+import {
+    STAGE_WIDTH,
+    STAGE_HEIGHT,
+    COLORS,
+} from "../../constants.ts";
 
 export class ResultsScreenView implements View {
     private group: Konva.Group;
@@ -17,8 +20,8 @@ export class ResultsScreenView implements View {
 
         this.group.add(background);
 
-        this.addButton("Play Again", 230, 350, onRestart);
-        this.addButton("Main Menu", 430, 350, onMenu);
+        this.addButton("Play Again", 552, 630, onRestart);
+        this.addButton("Main Menu", 1032, 630, onMenu);
     }
 
     render(score: number, won: boolean): void {
@@ -26,11 +29,11 @@ export class ResultsScreenView implements View {
 
         const title = new Konva.Text({
             name: "resultText",
-            x: 100,
-            y: 150,
-            width: 600,
+            x: 240,
+            y: 270,
+            width: 1440,
             text: won ? "LEVEL COMPLETE!" : "GAME OVER",
-            fontSize: 40,
+            fontSize: 72,
             fontFamily: "Arial",
             fill: COLORS.accent,
             align: "center",
@@ -38,11 +41,11 @@ export class ResultsScreenView implements View {
 
         const scoreText = new Konva.Text({
             name: "resultText",
-            x: 100,
-            y: 245,
-            width: 600,
+            x: 240,
+            y: 441,
+            width: 1440,
             text: `Questions Answered: ${score}/3`,
-            fontSize: 25,
+            fontSize: 45,
             fontFamily: "Arial",
             fill: COLORS.text,
             align: "center",
@@ -60,18 +63,21 @@ export class ResultsScreenView implements View {
     ): void {
         const group = new Konva.Group({ x, y });
 
+        const buttonWidth = 360;
+        const buttonHeight = 99;
+
         group.add(new Konva.Rect({
-            width: 150,
-            height: 55,
+            width: buttonWidth,
+            height: buttonHeight,
             fill: COLORS.button,
-            cornerRadius: 10,
+            cornerRadius: 24,
         }));
 
         group.add(new Konva.Text({
             text: label,
-            width: 150,
-            height: 55,
-            fontSize: 18,
+            width: buttonWidth,
+            height: buttonHeight,
+            fontSize: 32,
             fill: COLORS.text,
             align: "center",
             verticalAlign: "middle",
