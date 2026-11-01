@@ -39,14 +39,21 @@ const LOGO_X = W / 80;
 const QUESTION_Y = H / 1.8;
 const QUESTION_FONT_SIZE = H / 26;
 
-// Card sits under the logo, centered on it, bottom-aligned with the question row.
-// Position the image so the VISIBLE card (not the padding) is centered on the
-// logo, with its bottom edge level with the bottom of the question row.
-const CARD_X =
-    LOGO_X +
-    LOGO_WIDTH / 2 -
+// The card sits under the logo, centered on it, with its bottom edge level with
+// the bottom of the question row. Images are positioned by their top-left
+// corner, and card.png has transparent padding, so we line up the VISIBLE card
+// and work out where the picture's corner has to go.
+
+// Horizontal: the visible card's center should land on the logo's center.
+const LOGO_CENTER_X = LOGO_X + LOGO_WIDTH / 2;
+const VISIBLE_CARD_CENTER_IN_IMAGE =
     ((CARD_VISIBLE_LEFT + CARD_VISIBLE_RIGHT) / 2) * CARD_SCALE;
-const CARD_Y = QUESTION_Y + QUESTION_FONT_SIZE - CARD_VISIBLE_BOTTOM * CARD_SCALE;
+const CARD_X = LOGO_CENTER_X - VISIBLE_CARD_CENTER_IN_IMAGE;
+
+// Vertical: the visible card's bottom edge should land on the question row's bottom.
+const QUESTION_BOTTOM_Y = QUESTION_Y + QUESTION_FONT_SIZE;
+const VISIBLE_CARD_BOTTOM_IN_IMAGE = CARD_VISIBLE_BOTTOM * CARD_SCALE;
+const CARD_Y = QUESTION_BOTTOM_Y - VISIBLE_CARD_BOTTOM_IN_IMAGE;
 
 const RIGHT_COLUMN_X = W / 5; // smaller = panels move left
 const RIGHT_COLUMN_WIDTH = (W * 2) / 3; // smaller = narrower panels
