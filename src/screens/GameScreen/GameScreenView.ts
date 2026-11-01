@@ -70,6 +70,7 @@ export class GameScreenView implements View {
 
         
         const layout = GAME_SCREEN_CONSTANTS;
+        const pad = layout.PANEL_PADDING;
         const infoPanel = addPanel(this.group, 
              layout.RIGHT_COLUMN_X,
              layout.INFO_PANEL_Y, 
@@ -83,11 +84,11 @@ export class GameScreenView implements View {
         }
         infoPanel.add(
             new Konva.Text({
-                x: 16,
-                y: 60,
-                width: layout.RIGHT_COLUMN_WIDTH - 32,
+                x: pad,
+                y: layout.PANEL_BODY_Y,
+                width: layout.RIGHT_COLUMN_WIDTH - 2 * pad,
                 text: clueLines,
-                fontSize: 20,
+                fontSize: layout.PANEL_BODY_FONT_SIZE,
                 lineHeight: 1.5,
                 fontFamily: "Georgia, serif",
                 fill: layout.PANEL_TEXT,
@@ -97,14 +98,14 @@ export class GameScreenView implements View {
             `Strikes: ${state.strikes}/${state.maxStrikes}`,
             layout.STATS_X,
             layout.STATS_Y_STRIKES,
-            32
+            layout.STATS_FONT_SIZE
         );
 
         this.addText(
             `Progress: ${state.questionsAnswered}/${state.questionsRequired}`,
             layout.STATS_X,
             layout.STATS_Y_PROGRESS,
-            32
+            layout.STATS_FONT_SIZE
         );
 
         // Hidden card
@@ -129,20 +130,19 @@ export class GameScreenView implements View {
         );
 
         // Everything below is positioned relative to the panel's top-left.
-        const pad = 16;
-        const rowY = 110; // the input + Submit row
-        const inputWidth = 564;
-        const submitWidth = 144;
+        const rowY = layout.PANEL_ROW_Y; // the input + Submit row
+        const inputWidth = layout.INPUT_WIDTH;
+        const submitWidth = layout.SUBMIT_WIDTH;
         const rowHeight = layout.BUTTON_HEIGHT;
 
         // The question being asked
         probabilityPanel.add(
             new Konva.Text({
                 x: pad,
-                y: 60,
+                y: layout.PANEL_BODY_Y,
                 width: layout.RIGHT_COLUMN_WIDTH - 2 * pad,
                 text: state.currentQuestion?.text ?? "",
-                fontSize: 20,
+                fontSize: layout.PANEL_BODY_FONT_SIZE,
                 fontFamily: "Arial",
                 fill: layout.PANEL_TEXT,
             })
@@ -152,11 +152,11 @@ export class GameScreenView implements View {
         probabilityPanel.add(
             new Konva.Text({
                 x: pad,
-                y: rowY + rowHeight + 14,
+                y: rowY + rowHeight + layout.PANEL_HINT_GAP,
                 text: "Enter a fraction, decimal, or percentage.",
-                fontSize: 16,
+                fontSize: layout.PANEL_HINT_FONT_SIZE,
                 fontFamily: "Arial",
-                fill: "#6b6b5e",
+                fill: layout.PANEL_HINT_TEXT,
             })
         );
 
@@ -193,7 +193,7 @@ export class GameScreenView implements View {
                     height: rowHeight,
                     verticalAlign: "middle",
                     text: feedback,
-                    fontSize: 24,
+                    fontSize: layout.FEEDBACK_FONT_SIZE,
                     fontFamily: "Arial",
                     // dark colors, because the panel is cream
                     fill: showNext ? "#1c7a3c" : COLORS.button,
@@ -277,7 +277,7 @@ export class GameScreenView implements View {
             "position: absolute",
             "box-sizing: border-box",
             "pointer-events: auto", // ...except on the input itself
-            "padding: 0 19px",
+            `padding: 0 ${GAME_SCREEN_CONSTANTS.INPUT_PADDING_X}px`,
             `font: ${GAME_SCREEN_CONSTANTS.BUTTON_FONT_SIZE}px Arial, sans-serif`,
             "background: #f4efe6",
             "border: 2px solid #d9d0b8",
@@ -370,26 +370,6 @@ export class GameScreenView implements View {
         this.group.add(label);
     }
 
-    private addCenteredText(
-        text: string,
-        y: number,
-        fontSize: number,
-        color = COLORS.text
-    ): void {
-        const label = new Konva.Text({
-            x: 120,
-            y,
-            width: STAGE_WIDTH - 240,
-            text,
-            fontSize,
-            fontFamily: "Arial",
-            fill: color,
-            align: "center",
-        });
-
-        this.group.add(label);
-    }
-
     private addButton(
         label: string,
         x: number,
@@ -406,7 +386,7 @@ export class GameScreenView implements View {
             height: buttonHeight,
             fill: COLORS.button,
             stroke: COLORS.buttonDark,
-            strokeWidth: 5,
+            strokeWidth: GAME_SCREEN_CONSTANTS.BUTTON_STROKE,
             cornerRadius: GAME_SCREEN_CONSTANTS.BUTTON_RADIUS,
         });
 

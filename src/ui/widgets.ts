@@ -1,4 +1,7 @@
 import Konva from "konva";
+import { GAME_SCREEN_CONSTANTS } from "../constants.ts";
+
+const c = GAME_SCREEN_CONSTANTS;
 
 export function addPanel(
     parent: Konva.Group,
@@ -8,20 +11,20 @@ export function addPanel(
     h: number,
     title: string
 ): Konva.Group {
-    const panel = new Konva.Group({x,y})
+    const panel = new Konva.Group({ x, y });
     panel.add(new Konva.Rect({
         width: w,
         height: h,
-        fill: "#fffdf4",
-        cornerRadius: 16,
+        fill: c.PANEL_FILL,
+        cornerRadius: c.PANEL_RADIUS,
     }));
     panel.add(new Konva.Text({
-        x: 16,
-        y: 16,
+        x: c.PANEL_PADDING,
+        y: c.PANEL_PADDING,
         text: title,
-        fontSize: 22,
+        fontSize: c.PANEL_TITLE_FONT_SIZE,
         fontFamily: "Georgia, serif",
-        fill: "#07451c",
+        fill: c.PANEL_TEXT,
     }));
     parent.add(panel);
     return panel;

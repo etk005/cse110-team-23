@@ -1,18 +1,19 @@
 import Konva from "konva";
 import type { View } from "../../types.ts";
-import { STAGE_WIDTH, COLORS } from "../../constants.ts";
+import { STAGE_WIDTH, COLORS, MENU_SCREEN_CONSTANTS } from "../../constants.ts";
 
 export class MenuScreenView implements View {
     private group: Konva.Group;
 
     constructor(onStartClick: () => void) {
         this.group = new Konva.Group({ visible: true });
+        const c = MENU_SCREEN_CONSTANTS;
 
         const title = new Konva.Text({
             x: STAGE_WIDTH / 2,
-            y: 270,
+            y: c.TITLE_Y,
             text: "PROBABILITY GAME",
-            fontSize: 79,
+            fontSize: c.TITLE_FONT_SIZE,
             fontFamily: "Arial",
             fill: COLORS.text,
             align: "center",
@@ -23,9 +24,9 @@ export class MenuScreenView implements View {
 
         const subtitle = new Konva.Text({
             x: STAGE_WIDTH / 2,
-            y: 378,
+            y: c.SUBTITLE_Y,
             text: "Learn probability through cards and strategy",
-            fontSize: 36,
+            fontSize: c.SUBTITLE_FONT_SIZE,
             fontFamily: "Arial",
             fill: COLORS.accent,
             align: "center",
@@ -37,21 +38,21 @@ export class MenuScreenView implements View {
         const startButtonGroup = new Konva.Group();
 
         const startButton = new Konva.Rect({
-            x: STAGE_WIDTH / 2 - 240,
-            y: 540,
-            width: 480,
-            height: 108,
+            x: (STAGE_WIDTH - c.BUTTON_WIDTH) / 2,
+            y: c.BUTTON_Y,
+            width: c.BUTTON_WIDTH,
+            height: c.BUTTON_HEIGHT,
             fill: COLORS.button,
-            cornerRadius: 24,
+            cornerRadius: c.BUTTON_RADIUS,
             stroke: COLORS.buttonDark,
-            strokeWidth: 7,
+            strokeWidth: c.BUTTON_STROKE,
         });
 
         const startText = new Konva.Text({
             x: STAGE_WIDTH / 2,
-            y: 567,
+            y: c.BUTTON_TEXT_Y,
             text: "START GAME",
-            fontSize: 43,
+            fontSize: c.BUTTON_FONT_SIZE,
             fontFamily: "Arial",
             fill: COLORS.text,
             align: "center",
