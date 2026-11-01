@@ -3,11 +3,4 @@ dist/
 coverage/
 .env
 .env.local
-.env.*.local
-*.log
-npm-debug.log*
-.DS_Store
-.vscode/*
-!.vscode/extensions.json
-.idea/
-*.tsbuildinfo
+.DS_store
