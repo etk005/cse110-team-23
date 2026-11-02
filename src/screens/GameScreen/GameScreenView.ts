@@ -34,10 +34,6 @@ export class GameScreenView implements View {
         feedback = "",
         showNext = false
     ): void {
-        void options;
-        void feedback;
-        void showNext;
-
         this.group.destroyChildren();
 
         const background = new Konva.Rect({
@@ -109,18 +105,53 @@ export class GameScreenView implements View {
             COLORS.text
         );
 
-        // Answer buttons — Issue #7
+        // Answer buttons
+        if (!showNext && state.status === "playing") {
+            options.forEach((option, index) => {
+                const x = 65 + index * 140;
+
+                this.addButton(
+                    option,
+                    x,
+                    405,
+                    110,
+                    () => this.onAnswer(option)
+                );
+            });
+        }
 
         // Feedback message — Issue #8
 
-        // Navigation
-        this.addButton(
-            "Menu",
-            325,
-            530,
-            150,
-            this.onMenu
-        );
+        // Navigation buttons
+        if (showNext) {
+            const label = state.status === "won"
+                ? "Finish Level"
+                : "Next Question";
+
+            this.addButton(
+                label,
+                410,
+                530,
+                180,
+                this.onNext
+            );
+
+            this.addButton(
+                "Menu",
+                210,
+                530,
+                150,
+                this.onMenu
+            );
+        } else {
+            this.addButton(
+                "Menu",
+                325,
+                530,
+                150,
+                this.onMenu
+            );
+        }
 
         this.group.getLayer()?.draw();
     }

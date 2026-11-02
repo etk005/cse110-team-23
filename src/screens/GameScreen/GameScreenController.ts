@@ -34,11 +34,28 @@ export class GameScreenController extends ScreenController {
     }
 
     private handleAnswer(answer: string): void {
-        void answer; // probability submission — Issue #7
+        if (this.model.isWaitingForNext()) {
+            return;
+        }
+
+        const correct = this.model.submitAnswer(answer);
+
+        if (correct) {
+            this.updateView("", true);
+        } else {
+            // feedback message
+            this.updateView();
+        }
     }
 
     private handleNext(): void {
-        // question progression — Issue #7
+        if (!this.model.isWaitingForNext()) {
+            return;
+        }
+
+        // navigate to results on win
+        this.model.nextQuestion();
+        this.updateView();
     }
 
     private updateView(
