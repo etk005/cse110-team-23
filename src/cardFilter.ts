@@ -29,23 +29,31 @@ export function matchesInformation(card: Card, clue: KnownInformation): boolean 
     case "equals":
       return cardValue === targetValue;
     case "not_equals":
-      return cardValue !== targetValue;
-    case "contains":
-      return cardValue.includes(targetValue);
-    case "greater_than":
-      return Number(cardValue) > Number(targetValue);
-    case "less_than":
-      return Number(cardValue) < Number(targetValue);
+      return cardValue !== notEquals(cardValue, targetValue); // or just cardValue !== targetValue
     default:
       return true;
   }
 }
 
-/**
- * Matches a card against a structured KnownInformation clue.
- */
+// Cleaner switch operator implementation matching the allowed type:
 export function matchesClue(card: Card, clue: KnownInformation): boolean {
-  return matchesInformation(card, clue);
+  const property = clue.property.toLowerCase();
+  const targetValue = String(clue.value ?? "").toLowerCase();
+
+  let cardValue = "";
+  if (property === "color") {
+    cardValue = getCardColor(String(card.suit ?? ""));
+  } else {
+    cardValue = String(card[property as keyof Card] ?? "").toLowerCase();
+  }
+
+  if (clue.operator === "equals") {
+    return cardValue === targetValue;
+  }
+  if (clue.operator === "not_equals") {
+    return cardValue !== targetValue;
+  }
+  return true;
 }
 
 /**
