@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { getRemainingPossibleCards } from "./cardFilter";
-import type { Card, KnownInformation } from "../shared/types";
+import type { Card, KnownInformation } from "./shared/types";
 
 describe("Card Filtering Logic", () => {
   // Use a local mock deck so it doesn't fail on missing config files
