@@ -14,11 +14,11 @@ export interface Card {
 
 // for clues revealed to the player about the hidden card
 export interface KnownInformation {
-    id: string;
-    description: string;
-    property: "suit" | "rank" | "color";
-    operator: "equals" | "not_equals";
-    value: string;
+  id: string;
+  description: string;
+  property: "suit" | "rank" | "color" | "parity" | "category";
+  operator: "equals" | "not_equals" | "less_than" | "greater_than";
+  value: string;
 }
 
 // current probability question
