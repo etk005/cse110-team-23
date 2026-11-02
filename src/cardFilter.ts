@@ -1,5 +1,5 @@
 import type { Card, KnownInformation } from "../shared/types";
-import { matchesInformation } from "./game/informationMatching";
+import { matchesInformation } from "./informationMatching";
 
 /**
  * Matches a card against a structured KnownInformation clue.
