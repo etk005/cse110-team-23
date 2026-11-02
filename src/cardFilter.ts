@@ -1,4 +1,3 @@
-TypeScript
 import type { Card, KnownInformation } from "./shared/types";
 
 /**
