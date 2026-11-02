@@ -94,6 +94,34 @@ describe("GameScreenController", () => {
         expect(currentState().questionsAnswered).toBe(0);
     });
 
+    it("shows correct feedback after a valid answer", () => {
+        viewMock.onAnswer?.(correctAnswer());
+
+        expect(viewMock.render).toHaveBeenLastCalledWith(
+            expect.anything(),
+            expect.anything(),
+            "Correct! Great job!",
+            true
+        );
+    });
+
+    it("shows incorrect feedback after a wrong answer", () => {
+        viewMock.onAnswer?.(wrongAnswer());
+
+        expect(viewMock.render).toHaveBeenLastCalledWith(
+            expect.anything(),
+            expect.anything(),
+            "Incorrect! Try again.",
+            false
+        );
+    });
+
+    it("increases strikes after an incorrect answer", () => {
+        viewMock.onAnswer?.(wrongAnswer());
+
+        expect(currentState().strikes).toBe(1);
+    });
+
     it("does not skip unanswered questions", () => {
         const originalQuestion = currentState().currentQuestion;
 
