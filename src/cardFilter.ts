@@ -1,5 +1,3 @@
-
-
 // Full list of card objects for the level
 // @ param {Array} deck
 
@@ -11,20 +9,20 @@
 // @ returns {Array<string>}
 
 
-function getRemainingPossibleCards (deck, knownInformation){
+export function getRemainingPossibleCards(deck: any[], knownInformation: any[]): any[] {
 
 if (!deck || !Array.isArray(deck)) return [];
 
 if (!knownInformation || knownInformation.length === 0){
-		return deck.map(card => card.id);
+		return deck.map((card: any) => card.id);
 }
 
 
 	return deck
-	.filter (card => {
-		return knownInformation.every(clue => matchesClue (card, clue.toLowerCase()));
+	.filter ((card: any) => {
+		return knownInformation.every((clue: any) => matchesClue(card, clue.toLowerCase()));
 	})
-	.map(card => card.id);
+	.map((card: any) => card.id);
 
 }
 
@@ -33,7 +31,7 @@ if (!knownInformation || knownInformation.length === 0){
 
 
 
-function matchesClue (card, clue){
+function matchesClue(card: any, clue: string): boolean {
 	
 const attrs = card.attributes || {};
 	
@@ -88,6 +86,3 @@ res2.length === 4,
 console.log('All tests completed successfully!');
 
 }
-
-module.exports = { getRemainingPossibleCards };
-
