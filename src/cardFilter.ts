@@ -1,4 +1,4 @@
-import type { Card, KnownInformation } from "../shared/types";
+import type { Card, KnownInformation } from "./shared/types";
 
 /**
  * Helper to determine card color based on suit.
