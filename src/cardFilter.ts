@@ -1,9 +1,30 @@
 import type { Card, KnownInformation } from "../shared/types";
-import { matchesInformation } from "./informationMatching";
 
 /**
  * Matches a card against a structured KnownInformation clue.
- * Reuses matchesInformation function from PR #30.
+ */
+export function matchesInformation(card: Card, clue: KnownInformation): boolean {
+  const cardValue = String(card[clue.property as keyof Card] ?? "").toLowerCase();
+  const targetValue = String(clue.value ?? "").toLowerCase();
+
+  switch (clue.operator) {
+    case "equals":
+      return cardValue === targetValue;
+    case "not_equals":
+      return cardValue !== targetValue;
+    case "contains":
+      return cardValue.includes(targetValue);
+    case "greater_than":
+      return Number(cardValue) > Number(targetValue);
+    case "less_than":
+      return Number(cardValue) < Number(targetValue);
+    default:
+      return true;
+  }
+}
+
+/**
+ * Matches a card against a structured KnownInformation clue.
  */
 export function matchesClue(card: Card, clue: KnownInformation): boolean {
   return matchesInformation(card, clue);
