@@ -1,9 +1,9 @@
 import type { Card, KnownInformation } from "../shared/types";
-import { matchesInformation } from "./informationMatching";
+import { matchesInformation } from "./game/informationMatching";
 
 /**
  * Matches a card against a structured KnownInformation clue.
- * Reuses Gandharva's matchesInformation function from PR #30.
+ * Reuses matchesInformation function from PR #30.
  */
 export function matchesClue(card: Card, clue: KnownInformation): boolean {
   return matchesInformation(card, clue);
