@@ -224,5 +224,53 @@ describe("GameScreenModel", () => {
         });
     });
 
-    void completeGame;
+    describe("Winning and restarting", () => {
+        it("wins after completing all required questions", () => {
+            completeGame();
+
+            expect(model.getState().status).toBe("won");
+            expect(model.getState().questionsAnswered).toBe(
+                model.getState().questionsRequired
+            );
+        });
+
+        it("does not accept answers after winning", () => {
+            completeGame();
+
+            const progress = model.getState().questionsAnswered;
+
+            expect(model.submitAnswer(correctAnswer())).toBe(false);
+            expect(model.getState().questionsAnswered).toBe(progress);
+        });
+
+        it("resets progress and strikes", () => {
+            model.submitAnswer(wrongAnswer());
+            model.reset();
+
+            const state = model.getState();
+
+            expect(state.status).toBe("playing");
+            expect(state.strikes).toBe(0);
+            expect(state.questionsAnswered).toBe(0);
+        });
+
+        it("resets the Next Question state", () => {
+            model.submitAnswer(correctAnswer());
+
+            expect(model.isWaitingForNext()).toBe(true);
+
+            model.reset();
+
+            expect(model.isWaitingForNext()).toBe(false);
+        });
+
+        it("restores the initial state after a restart", () => {
+            const initialState = structuredClone(model.getState());
+
+            model.submitAnswer(wrongAnswer());
+            model.reset();
+
+            expect(model.getState()).toEqual(initialState);
+        });
+    });
 });
