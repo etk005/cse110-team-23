@@ -1,6 +1,7 @@
+TypeScript
 import { describe, expect, it } from "vitest";
 import { level1 } from "../config/levels";
-import { getRemainingPossibleCards, matchesClue } from "./cardFilter";
+import { getRemainingPossibleCards } from "./cardFilter";
 import type { Card, KnownInformation } from "../shared/types";
 
 describe("Card Filtering Logic", () => {
