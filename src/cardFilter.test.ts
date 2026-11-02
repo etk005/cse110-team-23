@@ -1,11 +1,15 @@
-TypeScript
 import { describe, expect, it } from "vitest";
-import { level1 } from "../config/levels";
 import { getRemainingPossibleCards } from "./cardFilter";
 import type { Card, KnownInformation } from "../shared/types";
 
 describe("Card Filtering Logic", () => {
-  const mockDeck = level1.deck as Card[];
+  // Use a local mock deck so it doesn't fail on missing config files
+  const mockDeck: Card[] = [
+    { id: "h-2", suit: "hearts", rank: "2" },
+    { id: "s-k", suit: "spades", rank: "K" },
+    { id: "d-5", suit: "diamonds", rank: "5" },
+    { id: "c-10", suit: "clubs", rank: "10" },
+  ];
 
   it("should return all card IDs when knownInformation is empty", () => {
     const res = getRemainingPossibleCards(mockDeck, []);
@@ -31,9 +35,7 @@ describe("Card Filtering Logic", () => {
     ];
 
     const res = getRemainingPossibleCards(mockDeck, clues);
-    const expectedIds = mockDeck
-      .filter((c) => c.suit === "hearts")
-      .map((c) => c.id);
+    const expectedIds = ["h-2"];
 
     expect(res).toEqual(expectedIds);
   });
@@ -50,9 +52,7 @@ describe("Card Filtering Logic", () => {
     ];
 
     const res = getRemainingPossibleCards(mockDeck, clues);
-    const expectedIds = mockDeck
-      .filter((c) => c.suit !== "hearts" && c.suit !== "diamonds")
-      .map((c) => c.id);
+    const expectedIds = ["s-k", "c-10"];
 
     expect(res).toEqual(expectedIds);
   });
