@@ -1,88 +1,105 @@
-// Full list of card objects for the level
-// @ param {Array} deck
 
-// Array of string clues - 
-// ex. “The card is red”
-// @ param {Array<string>} knownInformation
+import type { Card, KnownInformation, Rank, Suit } from "../shared/types";
 
-// Array of card IDs that match the clues
-// @ returns {Array<string>}
+const RANK_VALUES: Record<Rank, number> = {
+  A: 1,
+  "2": 2,
+  "3": 3,
+  "4": 4,
+  "5": 5,
+  "6": 6,
+  "7": 7,
+  "8": 8,
+  "9": 9,
+  "10": 10,
+  J: 11,
+  Q: 12,
+  K: 13,
+};
 
-
-export function getRemainingPossibleCards(deck: any[], knownInformation: any[]): any[] {
-
-if (!deck || !Array.isArray(deck)) return [];
-
-if (!knownInformation || knownInformation.length === 0){
-		return deck.map((card: any) => card.id);
+function colorOf(suit: Suit): "red" | "black" {
+  return suit === "hearts" || suit === "diamonds" ? "red" : "black";
 }
 
-
-	return deck
-	.filter ((card: any) => {
-		return knownInformation.every((clue: any) => matchesClue(card, clue.toLowerCase()));
-	})
-	.map((card: any) => card.id);
-
+function parityOf(rank: Rank): "even" | "odd" {
+  return RANK_VALUES[rank] % 2 === 0 ? "even" : "odd";
 }
 
-
-
-
-
-
-function matchesClue(card: any, clue: string): boolean {
-	
-const attrs = card.attributes || {};
-	
-	// color clues
-	if (clue.includes('red')) return attrs.color?.toLowerCase() == 'red';
-	if (clue.includes('black')) return attrs.color?.toLowerCase() === 'black';
-
-	// suit clues
-	if (clue.includes('hearts')) return attrs.suit?.toLowerCase() === 'hearts';
-	if (clue.includes('diamonds')) return attrs.suit?.toLowerCase() === 'diamonds';
-	if (clue.includes('spades')) return attrs.suit?.toLowerCase() === 'spades';
-	if (clue.includes('clubs')) return attrs.suit?.toLowerCase() === 'clubs';
-	
-	if (clue.includes('face card')) { 
-const faceCards = ['jack', 'queen', 'king']; 
-const isFace = faceCards.includes(String(attrs.value).toLowerCase()) || attrs.isFaceCard === true; 
-return clue.includes('not') ? !isFace : isFace; 
+function categoryOf(rank: Rank): "number" | "face" {
+  if (rank === "A" || rank === "J" || rank === "Q" || rank === "K") {
+    return "face";
+  }
+  return "number";
 }
 
-return true;
+/**
+ * Matches a card against a structured KnownInformation clue.
+ */
+export function matchesClue(card: Card, clue: KnownInformation): boolean {
+  const cardColor = colorOf(card.suit);
+  const cardParity = parityOf(card.rank);
+  const cardCategory = categoryOf(card.rank);
+  const cardRankVal = RANK_VALUES[card.rank];
 
+  let cardValue: string | number = "";
 
+  switch (clue.property) {
+    case "color":
+      cardValue = cardColor;
+      break;
+    case "suit":
+      cardValue = card.suit;
+      break;
+    case "parity":
+      cardValue = cardParity;
+      break;
+    case "category":
+      cardValue = cardCategory;
+      break;
+    case "rank":
+      // For rank, value could be a specific rank string (e.g. "2") or a threshold string if using comparisons
+      cardValue = card.rank;
+      break;
+    default:
+      return true;
+  }
+
+  switch (clue.operator) {
+    case "equals":
+      return cardValue === clue.value;
+    case "not_equals":
+      return cardValue !== clue.value;
+    case "greater_than": {
+      const cardNum = RANK_VALUES[card.rank];
+      const targetNum = RANK_VALUES[clue.value as Rank] ?? Number(clue.value);
+      return cardNum > targetNum;
+    }
+    case "less_than": {
+      const cardNum = RANK_VALUES[card.rank];
+      const targetNum = RANK_VALUES[clue.value as Rank] ?? Number(clue.value);
+      return cardNum < targetNum;
+    }
+    default:
+      return true;
+  }
 }
 
-// UNIT TESTS (run to verify your code)
+/**
+ * Returns an array of card IDs that satisfy all provided clues.
+ */
+export function getRemainingPossibleCards(
+  deck: Card[],
+  knownInformation: KnownInformation[],
+): string[] {
+  if (!deck || !Array.isArray(deck)) return [];
 
-function runTests () {
-	const mockDeck = [ 
-{ id: 'card_01', name: 'Ace of Spades', attributes: { color: 'black', suit: 'spades', value: 11 } }, 
-{ id: 'card_02', name: '10 of Hearts', attributes: { color: 'red', suit: 'hearts', value: 10 } }, 
-{ id: 'card_03', name: 'King of Hearts', attributes: { color: 'red', suit: 'hearts', value: 'king' } }, 
-{ id: 'card_04', name: '7 of Diamonds', attributes: { color: 'red', suit: 'diamonds', value: 7 } } ];
+  if (!knownInformation || knownInformation.length === 0) {
+    return deck.map((card) => card.id);
+  }
 
-console.log('--- Running Person E Tests ---');
-
-
-// Test 1: Filter by red suit 
-
-const res1 = getRemainingPossibleCards(mockDeck, ['The card is red', 'The suit is hearts']);
-console.assert( 
-JSON.stringify(res1) === JSON.stringify(['card_02', 'card_03']), 
-`Test 1 Failed: Expected ['card_02', 'card_03'], got ${JSON.stringify(res1)}` );
-
-	// Test 2: No clues returns all cards 
-
-const res2 = getRemainingPossibleCards(mockDeck, []); 
-console.assert( 
-res2.length === 4, 
-`Test 2 Failed: Expected 4 cards, got ${res2.length}` 
-);
-
-console.log('All tests completed successfully!');
-
+  return deck
+    .filter((card) => {
+      return knownInformation.every((clue) => matchesClue(card, clue));
+    })
+    .map((card) => card.id);
 }
