@@ -44,6 +44,7 @@ class App implements ScreenSwitcher {
     switchToScreen(screen: Screen): void {
         this.menuController.hide();
         this.gameController.hide();
+        this.resultsController.hide();
 
         switch (screen.type) {
             case "menu":
