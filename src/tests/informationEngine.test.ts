@@ -1,12 +1,28 @@
 
 import { describe, expect, it } from "vitest";
-import { level1 } from "../config/levels";
 import {
   generatePossibleFacts,
   getNextInformation,
   isUsefulFact,
 } from "../game/informationEngine";
-import type { Card, KnownInformation } from "../shared/types";
+import type { Card, KnownInformation, Level } from "../shared/types";
+
+const level1: Level = {
+  id: 1,
+  name: "Level 1",
+  deck: [
+    { id: "H-A", suit: "hearts", rank: "A" },
+    { id: "H-2", suit: "hearts", rank: "2" },
+    { id: "H-3", suit: "hearts", rank: "3" },
+    { id: "H-4", suit: "hearts", rank: "4" },
+    { id: "S-A", suit: "spades", rank: "A" },
+    { id: "S-2", suit: "spades", rank: "2" },
+    { id: "S-3", suit: "spades", rank: "3" },
+    { id: "S-4", suit: "spades", rank: "4" },
+  ],
+  maxStrikes: 3,
+  questionsRequired: 3,
+};
 
 const heartAce = level1.deck[0] as Card;
 const heartTwo = level1.deck[1] as Card;

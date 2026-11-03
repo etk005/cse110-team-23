@@ -1,3 +1,4 @@
+import type { GameState, Level } from "../../shared/types.ts";
 import { ScreenController } from "../../types.ts";
 import type { ScreenSwitcher } from "../../types.ts";
 import { GameScreenModel } from "./GameScreenModel.ts";
@@ -31,6 +32,10 @@ export class GameScreenController extends ScreenController {
         this.model.reset();
         this.updateView();
         this.show();
+    }
+
+    setLevel(level: Level): void {
+        this.model.setLevel(level);
     }
 
     private handleAnswer(answer: string): void {

@@ -1,6 +1,24 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Screen, ScreenSwitcher } from "../types.ts";
+import type { Level } from "../shared/types.ts";
 import { GameScreenModel } from "../screens/GameScreen/GameScreenModel.ts";
+
+const level1: Level = {
+    id: 1,
+    name: "Level 1",
+    deck: [
+        { id: "H-A", suit: "hearts", rank: "A" },
+        { id: "H-2", suit: "hearts", rank: "2" },
+        { id: "H-3", suit: "hearts", rank: "3" },
+        { id: "H-4", suit: "hearts", rank: "4" },
+        { id: "S-A", suit: "spades", rank: "A" },
+        { id: "S-2", suit: "spades", rank: "2" },
+        { id: "S-3", suit: "spades", rank: "3" },
+        { id: "S-4", suit: "spades", rank: "4" },
+    ],
+    maxStrikes: 3,
+    questionsRequired: 3,
+};
 
 const viewMock = vi.hoisted(() => ({
     onAnswer: undefined as ((answer: string) => void) | undefined,
@@ -44,6 +62,7 @@ describe("GameScreenController", () => {
         const state = currentState();
 
         const testModel = new GameScreenModel();
+        testModel.setLevel(level1);
         const testState = testModel.getState();
 
         testState.remainingPossibleCards = state.remainingPossibleCards;
@@ -80,6 +99,7 @@ describe("GameScreenController", () => {
         };
 
         controller = new GameScreenController(screenSwitcher);
+        controller.setLevel(level1);
         controller.startGame();
     });
 

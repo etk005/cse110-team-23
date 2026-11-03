@@ -1,11 +1,30 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import type { Level } from "../shared/types.ts";
 import { GameScreenModel } from "../screens/GameScreen/GameScreenModel.ts";
+
+const level1: Level = {
+    id: 1,
+    name: "Level 1",
+    deck: [
+        { id: "H-A", suit: "hearts", rank: "A" },
+        { id: "H-2", suit: "hearts", rank: "2" },
+        { id: "H-3", suit: "hearts", rank: "3" },
+        { id: "H-4", suit: "hearts", rank: "4" },
+        { id: "S-A", suit: "spades", rank: "A" },
+        { id: "S-2", suit: "spades", rank: "2" },
+        { id: "S-3", suit: "spades", rank: "3" },
+        { id: "S-4", suit: "spades", rank: "4" },
+    ],
+    maxStrikes: 3,
+    questionsRequired: 3,
+};
 
 describe("GameScreenModel", () => {
     let model: GameScreenModel;
 
     beforeEach(() => {
         model = new GameScreenModel();
+        model.setLevel(level1);
     });
 
     function correctAnswer(): string {
@@ -40,8 +59,8 @@ describe("GameScreenModel", () => {
             expect(state.questionsAnswered).toBe(0);
         });
 
-        it("starts with a current question", () => {
-            expect(model.getState().currentQuestion).not.toBeNull();
+        it("starts without a current question", () => {
+            expect(model.getState().currentQuestion).toBeNull();
         });
 
         it("does not start waiting for Next Question", () => {
@@ -50,6 +69,7 @@ describe("GameScreenModel", () => {
 
         it("keeps separate game instances independent", () => {
             const secondModel = new GameScreenModel();
+            secondModel.setLevel(level1);
 
             model.submitAnswer(wrongAnswer());
 
@@ -270,7 +290,10 @@ describe("GameScreenModel", () => {
             model.submitAnswer(wrongAnswer());
             model.reset();
 
-            expect(model.getState()).toEqual(initialState);
+            expect(model.getState()).toEqual({
+                ...initialState,
+                gameId: expect.any(String),
+            });
         });
     });
 });

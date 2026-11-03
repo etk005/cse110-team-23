@@ -17,7 +17,7 @@ export class MenuScreenController extends ScreenController {
     }
 
     private handleStartClick(): void {
-        this.screenSwitcher.switchToScreen({ type: "game" });
+        this.screenSwitcher.switchToScreen({ type: "levels" });
     }
 
     getView(): MenuScreenView {

@@ -2,8 +2,8 @@ import type {
     GameState,
     Card,
     ProbabilityQuestion,
+    Level,
 } from "../../shared/types.ts";
-import { mockGameState } from "../../mocks/mockGameState.ts";
 
 const questions: ProbabilityQuestion[] = [
     {
@@ -29,16 +29,54 @@ const questions: ProbabilityQuestion[] = [
 export class GameScreenModel {
     private state: GameState;
     private waitingForNext = false;
+    private level: Level | null;
 
     constructor() {
-        this.state = structuredClone(mockGameState);
+        // nil value for now
+        // TODO: make game screen properly handle before init
+        this.state = {
+            "currentQuestion": null,
+            "deck": [],
+            "gameId": "",
+            "hiddenCard": { "isRevealed": false },
+            "knownInformation": [],
+            "levelId": 0,
+            "maxStrikes": 0,
+            "questionsAnswered": 0,
+            "questionsRequired": 0,
+            "remainingPossibleCards": [],
+            "status": "playing",
+            "strikes": 0
+        };
+        this.level = null;
     }
 
-    /**
-     * Resets the game back to its initial mock state.
-     * */
+    private initGameStateFromLevel(level: Level): GameState {
+        return {
+            currentQuestion: null,
+            deck: level.deck,
+            gameId: crypto.randomUUID(),
+            hiddenCard: { isRevealed: false },
+            knownInformation: [],
+            levelId: level.id,
+            maxStrikes: level.maxStrikes,
+            questionsAnswered: 0,
+            questionsRequired: level.questionsRequired,
+            remainingPossibleCards: [],
+            status: "playing",
+            strikes: 0
+        }
+    }
+
+    setLevel(level: Level): void {
+        this.level = level;
+        this.reset();
+    }
+
     reset(): void {
-        this.state = structuredClone(mockGameState);
+        if (this.level !== null) {
+            this.state = this.initGameStateFromLevel(this.level);
+        }
         this.waitingForNext = false;
     }
 
