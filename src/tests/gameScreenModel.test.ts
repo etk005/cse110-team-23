@@ -181,5 +181,48 @@ describe("GameScreenModel", () => {
         });
     });
 
+    describe("Strikes and losing", () => {
+        it("increments strikes for a wrong answer", () => {
+            model.submitAnswer(wrongAnswer());
+
+            expect(model.getState().strikes).toBe(1);
+        });
+
+        it("loses when maximum strikes are reached", () => {
+            const maxStrikes = model.getState().maxStrikes;
+            const answer = wrongAnswer();
+
+            for (let i = 0; i < maxStrikes; i++) {
+                model.submitAnswer(answer);
+            }
+
+            expect(model.getState().status).toBe("lost");
+            expect(model.getState().strikes).toBe(maxStrikes);
+        });
+
+        it("does not accept answers after losing", () => {
+            const maxStrikes = model.getState().maxStrikes;
+            const answer = wrongAnswer();
+
+            for (let i = 0; i < maxStrikes; i++) {
+                model.submitAnswer(answer);
+            }
+
+            expect(model.submitAnswer(correctAnswer())).toBe(false);
+            expect(model.getState().questionsAnswered).toBe(0);
+        });
+
+        it("does not exceed maximum strikes", () => {
+            const maxStrikes = model.getState().maxStrikes;
+            const answer = wrongAnswer();
+
+            for (let i = 0; i < maxStrikes + 2; i++) {
+                model.submitAnswer(answer);
+            }
+
+            expect(model.getState().strikes).toBe(maxStrikes);
+        });
+    });
+
     void completeGame;
 });

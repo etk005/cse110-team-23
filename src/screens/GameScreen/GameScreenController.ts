@@ -41,10 +41,9 @@ export class GameScreenController extends ScreenController {
         const correct = this.model.submitAnswer(answer);
 
         if (correct) {
-            this.updateView("", true);
+            this.updateView("Correct! Great job!", true);
         } else {
-            // feedback message
-            this.updateView();
+            this.updateView("Incorrect! Try again."); // loss routing — Issue #12
         }
     }
 

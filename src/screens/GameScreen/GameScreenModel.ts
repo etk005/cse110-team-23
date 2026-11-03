@@ -115,8 +115,13 @@ export class GameScreenModel {
             this.state.questionsAnswered++;
             this.waitingForNext = true;
             // win detection — Issue #12
+        } else {
+            this.state.strikes++;
+
+            if (this.state.strikes >= this.state.maxStrikes) {
+                this.state.status = "lost";
+            }
         }
-        // strike tracking — Issue #8
 
         return correct;
     }

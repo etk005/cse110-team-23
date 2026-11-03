@@ -120,7 +120,19 @@ export class GameScreenView implements View {
             });
         }
 
-        // Feedback message — Issue #8
+        // Feedback message
+        if (feedback) {
+            const feedbackColor = showNext
+                ? COLORS.accent
+                : "#ffaaaa";
+
+            this.addCenteredText(
+                feedback,
+                475,
+                22,
+                feedbackColor
+            );
+        }
 
         // Navigation buttons
         if (showNext) {
