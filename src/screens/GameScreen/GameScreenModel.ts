@@ -31,6 +31,8 @@ export class GameScreenModel {
     private waitingForNext = false;
 
     constructor() {
+        // nil value for now
+        // TODO: make game screen properly handle before init
         this.state = {
             "currentQuestion": null,
             "deck": [],
