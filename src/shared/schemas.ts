@@ -10,7 +10,10 @@ export const cardSchema = z.object({
     rank: rankSchema
 });
 
-export const levelManifestSchema = z.string().array();
+export const levelManifestSchema = z.object({
+    name: z.string(),
+    basename: z.string()
+}).array();
 
 export const levelSchema = z.object({
     id: z.number(),

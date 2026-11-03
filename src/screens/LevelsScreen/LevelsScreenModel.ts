@@ -14,7 +14,6 @@ export class LevelsScreenModel {
 
     async loadLevelManifest(): Promise<LevelManifest> {
         const level = await fetch(`${PATH_TO_LEVELS}/manifest.json`).then(x => x.json());
-        await new Promise((resolve) => setTimeout(resolve, 1_000));
         return this.manifest = levelManifestSchema.parse(level);
     }
 
@@ -22,13 +21,12 @@ export class LevelsScreenModel {
         return this.manifest;
     }
 
-    async loadLevel(name: string): Promise<Level> {
-        const level = await fetch(`${PATH_TO_LEVELS}/${name}.json`).then(x => x.json());
-        await new Promise((resolve) => setTimeout(resolve, 1_000));
-        return this.levels[name] = levelSchema.parse(level);
+    async loadLevel(basename: string): Promise<Level> {
+        const level = await fetch(`${PATH_TO_LEVELS}/${basename}.json`).then(x => x.json());
+        return this.levels[basename] = levelSchema.parse(level);
     }
 
-    getLevel(name: string): Level | null {
-        return this.levels[name] ?? null;
+    getLevel(basename: string): Level | null {
+        return this.levels[basename] ?? null;
     }
 }

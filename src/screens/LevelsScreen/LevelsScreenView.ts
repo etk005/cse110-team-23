@@ -10,7 +10,7 @@ const BUTTON_HEIGHT = 100;
 const BUTTON_SPACING_X = 40;
 const BUTTON_SPACING_Y = 40;
 
-export type OnLevelSelect = (name: string) => void;
+export type OnLevelSelect = (path: string) => void;
 
 export class LevelsScreenView implements View {
     private group: Konva.Group;
@@ -61,14 +61,18 @@ export class LevelsScreenView implements View {
             });
             group.add(button);
             const label = new Konva.Text({
-                text: level,
+                width: BUTTON_WIDTH,
+                height: BUTTON_HEIGHT,
+                offsetX: BUTTON_WIDTH / 2,
+                offsetY: BUTTON_HEIGHT / 2,
+                text: level.name,
                 fill: "red",
                 align: "center",
                 verticalAlign: "middle"
             });
             group.add(label);
 
-            group.on("click", () => this.onLevelSelect(level));
+            group.on("click", () => this.onLevelSelect(level.basename));
             this.group.add(group);
         });
     }
