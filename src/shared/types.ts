@@ -1,5 +1,5 @@
 import z from "zod";
-import { suitSchema, rankSchema, cardSchema, levelSchema } from "./schemas";
+import { suitSchema, rankSchema, cardSchema, levelSchema, levelManifestSchema } from "./schemas";
 
 export type Suit = z.infer<typeof suitSchema>;
 
@@ -9,6 +9,8 @@ export type Rank = z.infer<typeof rankSchema>;
 export interface Card extends z.infer<typeof cardSchema> {}
 
 export type Level = z.infer<typeof levelSchema>;
+
+export type LevelManifest = z.infer<typeof levelManifestSchema>;
 
 // for clues revealed to the player about the hidden card
 export interface KnownInformation {

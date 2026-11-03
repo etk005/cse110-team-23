@@ -1,9 +1,16 @@
-import { levelSchema } from "../shared/schemas";
-import type { GameState, Level } from "../shared/types";
+import { levelManifestSchema, levelSchema } from "../shared/schemas";
+import type { GameState, Level, LevelManifest } from "../shared/types";
 import crypto from "crypto";
 
+const PATH_TO_LEVELS = "levels";
+
+export async function loadLevelManifest(name: string): Promise<LevelManifest> {
+    const level = await fetch(`${PATH_TO_LEVELS}/manifest.json`).then(x => x.json());
+    return levelManifestSchema.parse(level);
+}
+
 export async function loadLevel(name: string): Promise<Level> {
-    const level = await fetch(`./levels/${name}.json`).then(x => x.json());
+    const level = await fetch(`${PATH_TO_LEVELS}/${name}.json`).then(x => x.json());
     return levelSchema.parse(level);
 }
 

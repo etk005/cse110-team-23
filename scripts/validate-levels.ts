@@ -1,23 +1,37 @@
 import path from "path";
 import fs from "fs/promises";
-import { levelSchema } from "../src/shared/schemas";
+import { levelManifestSchema, levelSchema } from "../src/shared/schemas";
+import type { LevelManifest } from "../src/shared/types";
 
 const PATH_TO_LEVELS = path.join(import.meta.dirname, "../public/levels");
 
-const levelPaths = await fs.readdir(PATH_TO_LEVELS);
+async function loadManifest(): Promise<LevelManifest> {
+    try {
+        const json = JSON.parse(await fs.readFile(path.join(PATH_TO_LEVELS, "manifest.json"), "utf8"));
+        return levelManifestSchema.parse(json);
+    } catch (cause) {
+        throw new Error("Invalid level manifest", { cause });
+    }
+}
 
-let errors = await Promise.all(levelPaths.map(async levelPath => {
-    levelPath = path.join(PATH_TO_LEVELS, levelPath);
+async function loadLevel(name: string) {
+    try {
+        const json = JSON.parse(await fs.readFile(path.join(PATH_TO_LEVELS, `${name}.json`), "utf8"));
+        return levelSchema.parse(json);
+    } catch (cause) {
+        throw new Error(`Invalid level ${name}`, { cause });
+    }
+}
 
-    let level = await fs.readFile(levelPath, "utf8");
-    level = JSON.parse(level);
+const manifest = await loadManifest();
 
-    const result = levelSchema.safeParse(level);
-    if (result.success) return null;
-
-    return `Invalid level ${levelPath}: ${result.error}`;
-}));
-errors = errors.filter(error => error !== null);
-if (errors.length > 0) throw new Error(errors.join("\n"));
-
+const results = await Promise.allSettled(manifest.map(name => loadLevel(name)));
+const errors = [];
+for (const result of results) {
+    if (result.status !== "rejected") continue;
+    errors.push(result.reason);
+}
+if (errors.length > 0) {
+    throw new Error("Invalid level(s)", { cause: errors });
+}
 console.log("All levels are valid");
