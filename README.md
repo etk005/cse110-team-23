@@ -124,7 +124,7 @@ flowchart TD
 2. **Per-Screen Model-View-Controller (MVC):**
    - **Model:** Manages screen data, rules, and calculations. **Completely decoupled from Konva and DOM APIs**, allowing comprehensive unit testing without canvas or browser mocks.
    - **View:** Implements the `View` interface (`show()`, `hide()`, `getGroup()`). Responsible purely for rendering Konva nodes and passing user inputs to controller callbacks.
-   - **Controller:** Extends `ScreenController`. Binds view interactions to model methods, triggers view updates, and requests screen transitions.
+   - **Controller:** Extends or implements `ScreenController` (e.g., `GameScreenController`, `ResultsScreenController`, and `MenuScreenController` extend the base class, while `LevelsScreenController` and `LoadingScreenController` implement it directly). Binds view interactions to model methods, triggers view updates, and requests screen transitions.
 
 3. **Pure, Framework-Independent Game Logic:**
    - **`informationMatching.ts`:** The single source of truth for card attributes (rank values, color, parity, category) and operator comparisons (`equals`, `less_than`, `greater_than`).
