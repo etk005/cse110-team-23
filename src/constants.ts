@@ -106,6 +106,20 @@ export const GAME_SCREEN_CONSTANTS = {
     REMAINING_PANEL_Y: CARD_Y + CARD_HEIGHT + H / 36,
     REMAINING_PANEL_WIDTH: (W * 2) / 7,
     REMAINING_PANEL_HEIGHT: H / 7,
+    REMAINING_PANEL_X: LOGO_X,
+    OUTLINE_BUTTON_FILL: "#fffdf4",
+    OUTLINE_BUTTON_BORDER: "#d9d0b8",
+
+    // "View Possible Cards" popup
+    MODAL_WIDTH: (W * 2) / 3,
+    MODAL_HEIGHT: (H * 3) / 4,
+    MODAL_BACKDROP: "rgba(0, 0, 0, 0.55)",
+    MINI_CARD_WIDTH: W / 22,
+    MINI_CARD_HEIGHT: H / 10, // a full 52-card deck still fits above the Close button
+    MINI_CARD_GAP: W / 120,
+    MINI_CARD_FONT_SIZE: H / 32,
+    MINI_CARD_RED: "#b62335",
+    MINI_CARD_BLACK: "#1a1a1a",
 
     INFO_PANEL_Y,
     INFO_PANEL_HEIGHT,

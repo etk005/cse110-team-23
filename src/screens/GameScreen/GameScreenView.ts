@@ -1,7 +1,7 @@
 
 import Konva from "konva";
 import type { View } from "../../types.ts";
-import type { GameState } from "../../shared/types.ts";
+import type { Card, GameState, Rank, Suit } from "../../shared/types.ts";
 import {addPanel} from "../../ui/widgets.ts";
 import {
     STAGE_WIDTH,
@@ -10,6 +10,14 @@ import {
     GAME_SCREEN_CONSTANTS,
 } from "../../constants.ts";
 
+const SUIT_ORDER: Suit[] = ["spades", "hearts", "diamonds", "clubs"];
+const RANK_ORDER: Rank[] = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
+const SUIT_SYMBOLS: Record<Suit, string> = {
+    spades: "\u2660",
+    hearts: "\u2665",
+    diamonds: "\u2666",
+    clubs: "\u2663",
+};
 
 export class GameScreenView implements View {
     private group: Konva.Group;
@@ -27,6 +35,9 @@ export class GameScreenView implements View {
         width: number;
         height: number;
     } | null = null;
+
+    // True while the "View Possible Cards" popup is open
+    private modalOpen = false;
 
     constructor(
         onAnswer: (answer: string) => void,
@@ -46,6 +57,7 @@ export class GameScreenView implements View {
         showNext = false
     ): void {
         this.group.destroyChildren();
+        this.modalOpen = false;
 
         const background = new Konva.Rect({
             width: STAGE_WIDTH,
@@ -107,6 +119,8 @@ export class GameScreenView implements View {
             layout.STATS_Y_PROGRESS,
             layout.STATS_FONT_SIZE
         );
+
+        this.addRemainingPanel(state.remainingPossibleCards);
 
         // Hidden card
         Konva.Image.fromURL("/card.png", (card) => {
@@ -311,7 +325,8 @@ export class GameScreenView implements View {
         }
 
         const stage = this.group.getStage();
-        const visible = this.wantInput && this.group.visible() && stage !== null;
+        const visible =
+            this.wantInput && !this.modalOpen && this.group.visible() && stage !== null;
 
         this.overlay.style.display = visible ? "block" : "none";
 
@@ -331,7 +346,7 @@ export class GameScreenView implements View {
     }
 
     private focusInput(): void {
-        if (this.wantInput && this.group.visible()) {
+        if (this.wantInput && !this.modalOpen && this.group.visible()) {
             this.input?.focus();
         }
     }
@@ -375,7 +390,8 @@ export class GameScreenView implements View {
         x: number,
         y: number,
         width: number,
-        onClick: () => void
+        onClick: () => void,
+        parent: Konva.Group = this.group
     ): void {
         const buttonGroup = new Konva.Group({ x, y });
 
@@ -412,7 +428,193 @@ export class GameScreenView implements View {
             document.body.style.cursor = "default";
         });
 
-        this.group.add(buttonGroup);
+        parent.add(buttonGroup);
+    }
+
+    // ---- Remaining possible cards ---------------------------------------
+
+    /** Panel under the hidden card: count + "View Possible Cards" button. */
+    private addRemainingPanel(cards: Card[]): void {
+        const c = GAME_SCREEN_CONSTANTS;
+        const pad = c.PANEL_PADDING;
+        const width = c.REMAINING_PANEL_WIDTH;
+
+        const panel = addPanel(
+            this.group,
+            c.REMAINING_PANEL_X,
+            c.REMAINING_PANEL_Y,
+            width,
+            c.REMAINING_PANEL_HEIGHT,
+            "Remaining possible cards"
+        );
+
+        panel.add(
+            new Konva.Text({
+                x: pad,
+                y: pad,
+                width: width - 2 * pad,
+                height: c.PANEL_TITLE_FONT_SIZE,
+                align: "right",
+                verticalAlign: "middle",
+                text: `${cards.length} total`,
+                fontSize: c.PANEL_BODY_FONT_SIZE,
+                fontFamily: "Arial",
+                fill: c.PANEL_HINT_TEXT,
+            })
+        );
+
+        const button = new Konva.Group({
+            x: pad,
+            y: c.REMAINING_PANEL_HEIGHT - pad - c.BUTTON_HEIGHT,
+        });
+        button.add(
+            new Konva.Rect({
+                width: width - 2 * pad,
+                height: c.BUTTON_HEIGHT,
+                fill: c.OUTLINE_BUTTON_FILL,
+                stroke: c.OUTLINE_BUTTON_BORDER,
+                strokeWidth: 2,
+                cornerRadius: c.BUTTON_RADIUS,
+            }),
+            new Konva.Text({
+                width: width - 2 * pad,
+                height: c.BUTTON_HEIGHT,
+                align: "center",
+                verticalAlign: "middle",
+                text: "View Possible Cards",
+                fontSize: c.BUTTON_FONT_SIZE,
+                fontStyle: "bold",
+                fontFamily: "Arial",
+                fill: c.PANEL_TEXT,
+            })
+        );
+        this.makeClickable(button, () => this.showPossibleCards(cards));
+        panel.add(button);
+    }
+
+    /** Popup listing every remaining possible card as a mini card tile. */
+    private showPossibleCards(cards: Card[]): void {
+        if (this.modalOpen) {
+            return;
+        }
+        const c = GAME_SCREEN_CONSTANTS;
+        const pad = c.PANEL_PADDING;
+        const modal = new Konva.Group();
+
+        const close = (): void => {
+            modal.destroy();
+            this.modalOpen = false;
+            document.body.style.cursor = "default";
+            this.updateInput();
+            this.focusInput();
+            this.group.getLayer()?.draw();
+        };
+
+        const backdrop = new Konva.Rect({
+            width: STAGE_WIDTH,
+            height: STAGE_HEIGHT,
+            fill: c.MODAL_BACKDROP,
+        });
+        backdrop.on("click tap", close);
+        modal.add(backdrop);
+
+        const panelX = (STAGE_WIDTH - c.MODAL_WIDTH) / 2;
+        const panelY = (STAGE_HEIGHT - c.MODAL_HEIGHT) / 2;
+        const panel = addPanel(
+            modal,
+            panelX,
+            panelY,
+            c.MODAL_WIDTH,
+            c.MODAL_HEIGHT,
+            `Possible Cards (${cards.length})`
+        );
+
+        // Grid of mini cards, sorted by suit then rank
+        const sorted = [...cards].sort(
+            (a, b) =>
+                SUIT_ORDER.indexOf(a.suit) - SUIT_ORDER.indexOf(b.suit) ||
+                RANK_ORDER.indexOf(a.rank) - RANK_ORDER.indexOf(b.rank)
+        );
+        const gridWidth = c.MODAL_WIDTH - 2 * pad;
+        const perRow = Math.max(
+            1,
+            Math.floor((gridWidth + c.MINI_CARD_GAP) / (c.MINI_CARD_WIDTH + c.MINI_CARD_GAP))
+        );
+        sorted.forEach((card, i) => {
+            panel.add(
+                this.makeMiniCard(
+                    card,
+                    pad + (i % perRow) * (c.MINI_CARD_WIDTH + c.MINI_CARD_GAP),
+                    c.PANEL_BODY_Y + Math.floor(i / perRow) * (c.MINI_CARD_HEIGHT + c.MINI_CARD_GAP)
+                )
+            );
+        });
+
+        if (cards.length === 0) {
+            panel.add(
+                new Konva.Text({
+                    x: pad,
+                    y: c.PANEL_BODY_Y,
+                    text: "No cards match the known information.",
+                    fontSize: c.PANEL_BODY_FONT_SIZE,
+                    fontFamily: "Arial",
+                    fill: c.PANEL_TEXT,
+                })
+            );
+        }
+
+        this.addButton(
+            "Close",
+            panelX + (c.MODAL_WIDTH - c.MENU_BUTTON_WIDTH) / 2,
+            panelY + c.MODAL_HEIGHT - pad - c.BUTTON_HEIGHT,
+            c.MENU_BUTTON_WIDTH,
+            close,
+            modal
+        );
+
+        this.group.add(modal);
+        this.modalOpen = true;
+        this.updateInput(); // hide the HTML input so it doesn't float over the popup
+        this.group.getLayer()?.draw();
+    }
+
+    private makeMiniCard(card: Card, x: number, y: number): Konva.Group {
+        const c = GAME_SCREEN_CONSTANTS;
+        const red = card.suit === "hearts" || card.suit === "diamonds";
+        const tile = new Konva.Group({ x, y });
+        tile.add(
+            new Konva.Rect({
+                width: c.MINI_CARD_WIDTH,
+                height: c.MINI_CARD_HEIGHT,
+                fill: "#ffffff",
+                stroke: c.OUTLINE_BUTTON_BORDER,
+                strokeWidth: 2,
+                cornerRadius: c.BUTTON_RADIUS / 2,
+            }),
+            new Konva.Text({
+                width: c.MINI_CARD_WIDTH,
+                height: c.MINI_CARD_HEIGHT,
+                align: "center",
+                verticalAlign: "middle",
+                text: `${card.rank}\n${SUIT_SYMBOLS[card.suit]}`,
+                lineHeight: 1.1,
+                fontSize: c.MINI_CARD_FONT_SIZE,
+                fontStyle: "bold",
+                fontFamily: "Arial",
+                fill: red ? c.MINI_CARD_RED : c.MINI_CARD_BLACK,
+            })
+        );
+        return tile;
+    }
+
+    private makeClickable(node: Konva.Group, onClick: () => void): void {
+        node.on("click tap", onClick);
+        node.on("mouseenter", () => {
+            document.body.style.cursor = "pointer";
+        });
+        node.on("mouseleave", () => {
+            document.body.style.cursor = "default";
+        });
     }
 
     show(): void {
