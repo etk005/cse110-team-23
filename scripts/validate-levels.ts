@@ -25,7 +25,7 @@ async function loadLevel(name: string) {
 
 const manifest = await loadManifest();
 
-const results = await Promise.allSettled(manifest.map(name => loadLevel(name)));
+const results = await Promise.allSettled(manifest.map(level => loadLevel(level.basename)));
 const errors = [];
 for (const result of results) {
     if (result.status !== "rejected") continue;

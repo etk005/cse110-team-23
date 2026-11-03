@@ -37,11 +37,11 @@ describe("MenuScreenController", () => {
         controller = new MenuScreenController(screenSwitcher);
     });
 
-    it("switches to the game when Start is clicked", () => {
+    it("switches to the levels screen when Start is clicked", () => {
         viewMock.onStart?.();
 
         expect(switchToScreen).toHaveBeenCalledWith({
-            type: "game",
+            type: "levels",
         });
     });
 
