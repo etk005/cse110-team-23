@@ -1,9 +1,11 @@
-
 import { ScreenController } from "../../types.ts";
 import type { ScreenSwitcher } from "../../types.ts";
 import { GameScreenModel } from "./GameScreenModel.ts";
 import { GameScreenView } from "./GameScreenView.ts";
 
+/** 
+ * Coordinates the game screen: connects model state to view rendering and input callbacks. 
+ * */
 export class GameScreenController extends ScreenController {
     private model: GameScreenModel;
     private view: GameScreenView;
@@ -22,6 +24,9 @@ export class GameScreenController extends ScreenController {
         );
     }
 
+    /** 
+     * Resets the model and renders the initial game state. 
+     * */
     startGame(): void {
         this.model.reset();
         this.updateView();
@@ -29,48 +34,11 @@ export class GameScreenController extends ScreenController {
     }
 
     private handleAnswer(answer: string): void {
-        if (this.model.isWaitingForNext()) {
-            return;
-        }
-
-        const correct = this.model.submitAnswer(answer);
-        const state = this.model.getState();
-
-        if (correct) {
-            this.updateView(
-                "Correct! Great job!",
-                true
-            );
-        } else if (state.status === "lost") {
-            this.showResults();
-        } else {
-            this.updateView(
-                "Incorrect! Try again."
-            );
-        }
+        void answer; // probability submission — Issue #7
     }
 
     private handleNext(): void {
-        if (!this.model.isWaitingForNext()) {
-            return;
-        }
-
-        const state = this.model.getState();
-
-        if (state.status === "won") {
-            this.showResults();
-            return;
-        }
-
-        this.model.nextQuestion();
-        this.updateView();
-    }
-
-    private showResults(): void {
-        this.screenSwitcher.switchToScreen({
-            type: "result",
-            score: this.model.getState().questionsAnswered,
-        });
+        // question progression — Issue #7
     }
 
     private updateView(
