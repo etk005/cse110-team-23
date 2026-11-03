@@ -3,6 +3,7 @@ import Konva from "konva";
 import type { ScreenSwitcher, Screen } from "./types.ts";
 import { MenuScreenController } from "./screens/MenuScreen/MenuScreenController.ts";
 import { GameScreenController } from "./screens/GameScreen/GameScreenController.ts";
+import { ResultsScreenController } from "./screens/ResultsScreen/ResultsScreenController.ts";
 import { STAGE_WIDTH, STAGE_HEIGHT } from "./constants.ts";
 
 // Main application class that manages the screens and navigation
@@ -12,6 +13,7 @@ class App implements ScreenSwitcher {
 
     private menuController: MenuScreenController;
     private gameController: GameScreenController;
+    private resultsController: ResultsScreenController;
 
     constructor(container: string) {
         // Set up the Konva stage and layer for rendering screens
@@ -27,10 +29,12 @@ class App implements ScreenSwitcher {
         // Initialize the screen controllers
         this.menuController = new MenuScreenController(this);
         this.gameController = new GameScreenController(this);
+        this.resultsController = new ResultsScreenController(this);
 
-        // Add both screen views to the same layer
+        // Add all screen views to the same layer
         this.layer.add(this.menuController.getView().getGroup());
         this.layer.add(this.gameController.getView().getGroup());
+        this.layer.add(this.resultsController.getView().getGroup());
 
         this.layer.draw();
         this.menuController.show();
@@ -51,7 +55,7 @@ class App implements ScreenSwitcher {
                 break;
 
             case "result":
-                // Results screen will be implemented in Issue #12
+                this.resultsController.showResults(screen.score);
                 break;
         }
     }

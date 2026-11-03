@@ -144,6 +144,29 @@ describe("GameScreenController", () => {
         }
     });
 
+    it("opens results when maximum strikes are reached", () => {
+        const maxStrikes = currentState().maxStrikes;
+        const answer = wrongAnswer();
+
+        for (let i = 0; i < maxStrikes; i++) {
+            viewMock.onAnswer?.(answer);
+        }
+
+        expect(switchToScreen).toHaveBeenCalledWith({
+            type: "result",
+            score: 0,
+        });
+    });
+
+    it("resets when starting a new game", () => {
+        viewMock.onAnswer?.(wrongAnswer());
+
+        controller.startGame();
+
+        expect(currentState().strikes).toBe(0);
+        expect(currentState().questionsAnswered).toBe(0);
+    });
+
     it("returns to the menu", () => {
         viewMock.onMenu?.();
 

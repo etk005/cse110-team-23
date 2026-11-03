@@ -114,7 +114,10 @@ export class GameScreenModel {
         if (correct) {
             this.state.questionsAnswered++;
             this.waitingForNext = true;
-            // win detection — Issue #12
+
+            if (this.state.questionsAnswered >= this.state.questionsRequired) {
+                this.state.status = "won";
+            }
         } else {
             this.state.strikes++;
 
