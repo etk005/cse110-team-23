@@ -1,16 +1,14 @@
+import z from "zod";
+import { suitSchema, rankSchema, cardSchema, levelSchema } from "./schemas";
 
-export type Suit = "hearts" | "diamonds" | "clubs" | "spades";
+export type Suit = z.infer<typeof suitSchema>;
 
-export type Rank =
-  | "A" | "2" | "3" | "4" | "5" | "6" | "7"
-  | "8" | "9" | "10" | "J" | "Q" | "K";
+export type Rank = z.infer<typeof rankSchema>;
 
 // represents a single card in the deck
-export interface Card {
-  id: string;
-  suit: Suit;
-  rank: Rank;
-}
+export interface Card extends z.infer<typeof cardSchema> {}
+
+export type Level = z.infer<typeof levelSchema>;
 
 // for clues revealed to the player about the hidden card
 export interface KnownInformation {

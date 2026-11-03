@@ -8,7 +8,8 @@
         "dev": "vite",
         "build": "tsc --noEmit && vite build",
         "preview": "vite preview",
-        "test": "vitest"
+        "test": "vitest",
+        "validate-levels": "tsx ./scripts/validate-levels.js"
     },
     "repository": {
         "type": "git",
@@ -28,6 +29,7 @@
         "vitest": "^5.0.5"
     },
     "dependencies": {
-        "konva": "^10.9.0"
+        "konva": "^10.9.0",
+        "zod": "^4.6.7"
     }
 }

@@ -1,6 +1,9 @@
 
+import { loadLevel } from "../game/levels";
 import type { GameState } from "../shared/types";
-import { level1 } from "../config/levels";
+// import { level1 } from "../config/levels";
+
+const level1 = await loadLevel("1");
 
 export const mockGameState: GameState = {
   gameId: "game-001",
