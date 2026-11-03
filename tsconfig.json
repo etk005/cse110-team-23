@@ -9,6 +9,8 @@
     // See also https://aka.ms/tsconfig/module
     "module": "esnext",
     "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
     "target": "esnext",
     "types": [],
     // For nodejs:
