@@ -1,41 +1,9 @@
 import type { Card, KnownInformation } from "./shared/types";
-
-/**
- * Helper to determine card color based on suit.
- */
-function getCardColor(suit: string): string {
-  const s = suit.toLowerCase();
-  if (s === "hearts" || s === "diamonds" || s === "h" || s === "d") {
-    return "red";
-  }
-  return "black";
-}
+import { matchesInformation } from "./game/informationMatching";
 
 /**
  * Matches a card against a structured KnownInformation clue.
- */
-export function matchesInformation(card: Card, clue: KnownInformation): boolean {
-  const property = clue.property.toLowerCase();
-  const targetValue = String(clue.value ?? "").toLowerCase();
-
-  let cardValue = "";
-  if (property === "color") {
-    cardValue = getCardColor(String(card.suit ?? ""));
-  } else {
-    cardValue = String(card[property as keyof Card] ?? "").toLowerCase();
-  }
-
-  if (clue.operator === "equals") {
-    return cardValue === targetValue;
-  }
-  if (clue.operator === "not_equals") {
-    return cardValue !== targetValue;
-  }
-  return true;
-}
-
-/**
- * Matches a card against a structured KnownInformation clue.
+ * (Delegates to the shared information engine matcher)
  */
 export function matchesClue(card: Card, clue: KnownInformation): boolean {
   return matchesInformation(card, clue);
