@@ -4,6 +4,8 @@ import type {
     ProbabilityQuestion,
     Level,
 } from "../../shared/types.ts";
+import { getNextInformation } from "../../game/informationEngine.ts";
+import { getRemainingPossibleCards } from "../../cardFilter.ts";
 
 const questions: ProbabilityQuestion[] = [
     {
@@ -30,8 +32,13 @@ export class GameScreenModel {
     private state: GameState;
     private waitingForNext = false;
     private level: Level | null;
+    private hiddenCard: Card | null = null;
 
-    constructor() {
+    /**
+     * @param random source of randomness for picking the hidden card;
+     * tests can pass a fixed function to make games deterministic.
+     */
+    constructor(private random: () => number = Math.random) {
         // nil value for now
         // TODO: make game screen properly handle before init
         this.state = {
@@ -52,8 +59,11 @@ export class GameScreenModel {
     }
 
     private initGameStateFromLevel(level: Level): GameState {
-        return {
-            currentQuestion: null,
+        const index = Math.floor(this.random() * level.deck.length);
+        this.hiddenCard = level.deck[index] ?? null;
+
+        const state: GameState = {
+            currentQuestion: questions[0] ?? null,
             deck: level.deck,
             gameId: crypto.randomUUID(),
             hiddenCard: { isRevealed: false },
@@ -62,10 +72,38 @@ export class GameScreenModel {
             maxStrikes: level.maxStrikes,
             questionsAnswered: 0,
             questionsRequired: level.questionsRequired,
-            remainingPossibleCards: [],
+            remainingPossibleCards: level.deck,
             status: "playing",
             strikes: 0
+        };
+
+        this.revealNextClue(state);
+        return state;
+    }
+
+    /**
+     * Adds the next useful clue about the hidden card (if any) and
+     * narrows the remaining possible cards to match all known clues.
+     */
+    private revealNextClue(state: GameState): void {
+        if (this.hiddenCard === null) {
+            return;
         }
+
+        const clue = getNextInformation(
+            this.hiddenCard,
+            state.remainingPossibleCards,
+            state.knownInformation
+        );
+
+        if (clue !== null) {
+            state.knownInformation.push(clue);
+        }
+
+        state.remainingPossibleCards = getRemainingPossibleCards(
+            state.deck,
+            state.knownInformation
+        );
     }
 
     setLevel(level: Level): void {
@@ -174,6 +212,7 @@ export class GameScreenModel {
         }
 
         this.waitingForNext = false;
+        this.revealNextClue(this.state);
 
         const nextIndex = this.state.questionsAnswered;
         this.state.currentQuestion = questions[nextIndex] ?? null;

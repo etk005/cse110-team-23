@@ -11,7 +11,14 @@ export class LoadingScreenController implements ScreenController {
     }
 
     wait(loader: Loader): void {
-        Promise.resolve(loader()).then(x => this.screenSwitcher.switchToScreen(x));
+        Promise.resolve()
+            .then(loader)
+            .then(x => this.screenSwitcher.switchToScreen(x))
+            .catch(error => {
+                // don't leave the player stuck on "Loading..." if a level fails to load
+                console.error("Failed to load screen", error);
+                this.screenSwitcher.switchToScreen({ type: "menu" });
+            });
         this.show();
     }
 
