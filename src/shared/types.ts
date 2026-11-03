@@ -33,6 +33,7 @@ export interface GameState {
   gameId: string;
   levelId: number;
   status: "playing" | "won" | "lost";
+  chips: number;
 
   // cards available in  current level
   deck: Card[];

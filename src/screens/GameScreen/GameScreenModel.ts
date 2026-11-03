@@ -3,7 +3,20 @@ import type {
     Card,
     ProbabilityQuestion,
     Level,
+    KnownInformation,
 } from "../../shared/types.ts";
+import { getNextInformation } from "../../game/informationEngine.ts";
+import { matchesInformation } from "../../game/informationMatching.ts";
+
+const STARTING_CHIPS = 3;
+const INFORMATION_COST = 1;
+
+type PurchaseInformationResult =
+    | { success: true; information: KnownInformation }
+    | {
+        success: false;
+        error: "not_enough_chips" | "no_information_available";
+    };
 
 const questions: ProbabilityQuestion[] = [
     {
@@ -30,12 +43,14 @@ export class GameScreenModel {
     private state: GameState;
     private waitingForNext = false;
     private level: Level | null;
+    private hiddenCard: Card | null = null;
 
     constructor() {
         // nil value for now
         // TODO: make game screen properly handle before init
         this.state = {
             "currentQuestion": null,
+            "chips": STARTING_CHIPS,
             "deck": [],
             "gameId": "",
             "hiddenCard": { "isRevealed": false },
@@ -54,6 +69,7 @@ export class GameScreenModel {
     private initGameStateFromLevel(level: Level): GameState {
         return {
             currentQuestion: null,
+            chips: STARTING_CHIPS,
             deck: level.deck,
             gameId: crypto.randomUUID(),
             hiddenCard: { isRevealed: false },
@@ -76,8 +92,19 @@ export class GameScreenModel {
     reset(): void {
         if (this.level !== null) {
             this.state = this.initGameStateFromLevel(this.level);
+            this.hiddenCard = this.pickHiddenCard(this.level.deck);
+            this.state.remainingPossibleCards = [...this.level.deck];
         }
         this.waitingForNext = false;
+    }
+
+    private pickHiddenCard(deck: Card[]): Card | null {
+        if (deck.length === 0) {
+            return null;
+        }
+
+        const randomIndex = Math.floor(Math.random() * deck.length);
+        return deck[randomIndex] ?? null;
     }
 
     getState(): GameState {
@@ -97,6 +124,45 @@ export class GameScreenModel {
      */
     isWaitingForNext(): boolean {
         return this.waitingForNext;
+    }
+
+    purchaseInformation(): PurchaseInformationResult {
+        if (this.state.chips < INFORMATION_COST) {
+            return {
+                success: false,
+                error: "not_enough_chips",
+            };
+        }
+
+        if (this.hiddenCard === null) {
+            return {
+                success: false,
+                error: "no_information_available",
+            };
+        }
+
+        const information = getNextInformation(
+            this.hiddenCard,
+            this.state.remainingPossibleCards,
+            this.state.knownInformation
+        );
+
+        if (information === null) {
+            return {
+                success: false,
+                error: "no_information_available",
+            };
+        }
+
+        this.state.chips -= INFORMATION_COST;
+        this.state.knownInformation.push(information);
+        this.state.remainingPossibleCards = this.state.remainingPossibleCards
+            .filter((card) => matchesInformation(card, information));
+
+        return {
+            success: true,
+            information,
+        };
     }
 
     private matchesQuestion(card: Card, questionId: string): boolean {

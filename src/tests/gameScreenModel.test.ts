@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { matchesInformation } from "../game/informationMatching.ts";
 import type { Level } from "../shared/types.ts";
 import { GameScreenModel } from "../screens/GameScreen/GameScreenModel.ts";
 
@@ -23,8 +24,13 @@ describe("GameScreenModel", () => {
     let model: GameScreenModel;
 
     beforeEach(() => {
+        vi.spyOn(Math, "random").mockReturnValue(0);
         model = new GameScreenModel();
         model.setLevel(level1);
+    });
+
+    afterEach(() => {
+        vi.restoreAllMocks();
     });
 
     function correctAnswer(): string {
@@ -50,6 +56,10 @@ describe("GameScreenModel", () => {
     describe("Initialization", () => {
         it("starts in the playing state", () => {
             expect(model.getState().status).toBe("playing");
+        });
+
+        it("starts with chips that can be spent on information", () => {
+            expect(model.getState().chips).toBe(3);
         });
 
         it("starts with no strikes or completed questions", () => {
@@ -294,6 +304,76 @@ describe("GameScreenModel", () => {
                 ...initialState,
                 gameId: expect.any(String),
             });
+        });
+    });
+
+    describe("Hint purchases", () => {
+        it("spends one chip and adds new information", () => {
+            const stateBefore = model.getState();
+            const chipsBefore = stateBefore.chips;
+
+            const result = model.purchaseInformation();
+
+            expect(result.success).toBe(true);
+
+            if (result.success) {
+                expect(model.getState().knownInformation).toContainEqual(
+                    result.information
+                );
+            }
+
+            expect(model.getState().chips).toBe(chipsBefore - 1);
+        });
+
+        it("returns an error when chips are not enough", () => {
+            model.getState().chips = 0;
+
+            const result = model.purchaseInformation();
+
+            expect(result).toEqual({
+                success: false,
+                error: "not_enough_chips",
+            });
+            expect(model.getState().knownInformation).toHaveLength(0);
+        });
+
+        it("returns an error when no new information is available", () => {
+            model.getState().chips = 20;
+
+            while (true) {
+                const result = model.purchaseInformation();
+                if (!result.success && result.error === "no_information_available") {
+                    break;
+                }
+            }
+
+            const chipsBefore = model.getState().chips;
+            const infoCountBefore = model.getState().knownInformation.length;
+            const result = model.purchaseInformation();
+
+            expect(result).toEqual({
+                success: false,
+                error: "no_information_available",
+            });
+            expect(model.getState().chips).toBe(chipsBefore);
+            expect(model.getState().knownInformation).toHaveLength(infoCountBefore);
+        });
+
+        it("keeps only cards that match purchased information", () => {
+            const result = model.purchaseInformation();
+
+            expect(result.success).toBe(true);
+
+            if (!result.success) {
+                return;
+            }
+
+            const { information } = result;
+            const matchesAll = model.getState().remainingPossibleCards.every((card) =>
+                matchesInformation(card, information)
+            );
+
+            expect(matchesAll).toBe(true);
         });
     });
 });
