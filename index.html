@@ -6,23 +6,42 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Probability Game</title>
         <style>
+            html,
             body {
                 margin: 0;
-                min-height: 100vh;
-                background: #0f3d2e;
+                width: 100%;
+                height: 100%;
+                overflow: hidden;
+                background: #07451c;
+            }
+
+            #viewport {
+                width: 100%;
+                height: 100%;
                 display: flex;
                 justify-content: center;
                 align-items: center;
+                overflow: hidden;
             }
 
             #container {
-                width: 800px;
-                height: 600px;
+                line-height: 0;
+                flex-shrink: 0;
+            }
+
+            #container .konvajs-content {
+                margin: 0 auto;
+            }
+
+            #container canvas {
+                display: block;
             }
         </style>
     </head>
     <body>
-        <div id="container"></div>
+        <div id="viewport">
+            <div id="container"></div>
+        </div>
         <script type="module" src="/src/main.ts"></script>
     </body>
 </html>
