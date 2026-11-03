@@ -1,12 +1,16 @@
 import Konva from "konva";
+import type { Level } from "./shared/types";
+import type { Loader } from "./screens/LoadingScreen/LoadingScreenController";
 
 /** 
  * Union of all screens the app can navigate to. 
  * */
 export type Screen =
     | { type: "menu" }
-    | { type: "game" }
-    | { type: "result"; score: number };
+    | { type: "game", level: Level }
+    | { type: "result"; score: number }
+    | { type: "levels" }
+    | { type: "loading"; loader: Loader };
 
 /** 
  * Implemented by the top-level App to handle screen transitions. 

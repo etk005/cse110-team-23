@@ -2,8 +2,8 @@ import type {
     GameState,
     Card,
     ProbabilityQuestion,
+    Level,
 } from "../../shared/types.ts";
-import { mockGameState } from "../../mocks/mockGameState.ts";
 
 const questions: ProbabilityQuestion[] = [
     {
@@ -31,14 +31,41 @@ export class GameScreenModel {
     private waitingForNext = false;
 
     constructor() {
-        this.state = structuredClone(mockGameState);
+        this.state = {
+            "currentQuestion": null,
+            "deck": [],
+            "gameId": "",
+            "hiddenCard": { "isRevealed": false },
+            "knownInformation": [],
+            "levelId": 0,
+            "maxStrikes": 0,
+            "questionsAnswered": 0,
+            "questionsRequired": 0,
+            "remainingPossibleCards": [],
+            "status": "playing",
+            "strikes": 0
+        };
     }
 
-    /**
-     * Resets the game back to its initial mock state.
-     * */
-    reset(): void {
-        this.state = structuredClone(mockGameState);
+    private initGameStateFromLevel(level: Level): GameState {
+        return {
+            currentQuestion: null,
+            deck: level.deck,
+            gameId: crypto.randomUUID(),
+            hiddenCard: { isRevealed: false },
+            knownInformation: [],
+            levelId: level.id,
+            maxStrikes: level.maxStrikes,
+            questionsAnswered: 0,
+            questionsRequired: level.questionsRequired,
+            remainingPossibleCards: [],
+            status: "playing",
+            strikes: 0
+        }
+    }
+
+    initLevel(level: Level): void {
+        this.state = this.initGameStateFromLevel(level);
         this.waitingForNext = false;
     }
 
