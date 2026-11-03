@@ -10,21 +10,19 @@ export function matchesClue(card: Card, clue: KnownInformation): boolean {
 }
 
 /**
- * Returns an array of card IDs that satisfy all provided clues.
+ * Returns the cards that satisfy all provided clues.
  */
 export function getRemainingPossibleCards(
   deck: Card[],
   knownInformation: KnownInformation[],
-): string[] {
+): Card[] {
   if (!deck || !Array.isArray(deck)) return [];
 
   if (!knownInformation || knownInformation.length === 0) {
-    return deck.map((card) => card.id);
+    return [...deck];
   }
 
-  return deck
-    .filter((card) => {
-      return knownInformation.every((clue) => matchesClue(card, clue));
-    })
-    .map((card) => card.id);
+  return deck.filter((card) => {
+    return knownInformation.every((clue) => matchesClue(card, clue));
+  });
 }

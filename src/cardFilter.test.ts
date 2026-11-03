@@ -12,7 +12,7 @@ describe("Card Filtering Logic", () => {
   ];
 
   it("should return all card IDs when knownInformation is empty", () => {
-    const res = getRemainingPossibleCards(mockDeck, []);
+    const res = getRemainingPossibleCards(mockDeck, []).map((c) => c.id);
     expect(res).toEqual(mockDeck.map((c) => c.id));
   });
 
@@ -34,7 +34,7 @@ describe("Card Filtering Logic", () => {
       },
     ];
 
-    const res = getRemainingPossibleCards(mockDeck, clues);
+    const res = getRemainingPossibleCards(mockDeck, clues).map((c) => c.id);
     const expectedIds = ["h-2"];
 
     expect(res).toEqual(expectedIds);
@@ -51,9 +51,47 @@ describe("Card Filtering Logic", () => {
       },
     ];
 
-    const res = getRemainingPossibleCards(mockDeck, clues);
+    const res = getRemainingPossibleCards(mockDeck, clues).map((c) => c.id);
     const expectedIds = ["s-k", "c-10"];
 
     expect(res).toEqual(expectedIds);
+  });
+
+  it("should filter by parity", () => {
+    const clues: KnownInformation[] = [
+      {
+        id: "parity-even",
+        description: "The hidden card is even.",
+        property: "parity",
+        operator: "equals",
+        value: "even",
+      },
+    ];
+
+    const res = getRemainingPossibleCards(mockDeck, clues).map((c) => c.id);
+
+    expect(res).toEqual(["h-2", "c-10"]);
+  });
+
+  it("should filter by rank less_than", () => {
+    const clues: KnownInformation[] = [
+      {
+        id: "rank-lt-7",
+        description: "The hidden card is less than 7.",
+        property: "rank",
+        operator: "less_than",
+        value: "7",
+      },
+    ];
+
+    const res = getRemainingPossibleCards(mockDeck, clues).map((c) => c.id);
+
+    expect(res).toEqual(["h-2", "d-5"]);
+  });
+
+  it("should return the matching Card objects", () => {
+    const res = getRemainingPossibleCards(mockDeck, []);
+
+    expect(res).toEqual(mockDeck);
   });
 });

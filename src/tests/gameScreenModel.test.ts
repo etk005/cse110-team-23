@@ -23,7 +23,8 @@ describe("GameScreenModel", () => {
     let model: GameScreenModel;
 
     beforeEach(() => {
-        model = new GameScreenModel();
+        // always pick the first card (H-A) so games are deterministic
+        model = new GameScreenModel(() => 0);
         model.setLevel(level1);
     });
 
@@ -59,8 +60,40 @@ describe("GameScreenModel", () => {
             expect(state.questionsAnswered).toBe(0);
         });
 
-        it("starts without a current question", () => {
-            expect(model.getState().currentQuestion).toBeNull();
+        it("starts with a current question", () => {
+            expect(model.getState().currentQuestion).not.toBeNull();
+        });
+
+        it("starts with a clue about the hidden card", () => {
+            expect(model.getState().knownInformation.length).toBeGreaterThan(0);
+        });
+
+        it("starts with remaining cards that match every clue", () => {
+            const state = model.getState();
+
+            // hidden card is H-A, so the first clue is "red"
+            expect(state.knownInformation[0]?.id).toBe("color-red");
+            expect(state.remainingPossibleCards.map((card) => card.id)).toEqual(
+                ["H-A", "H-2", "H-3", "H-4"]
+            );
+        });
+
+        it("always keeps the hidden card among the remaining cards", () => {
+            for (let i = 0; i < level1.deck.length; i++) {
+                const seeded = new GameScreenModel(() => i / level1.deck.length);
+                seeded.setLevel(level1);
+
+                const remaining = seeded.getState().remainingPossibleCards;
+
+                expect(remaining.map((card) => card.id)).toContain(
+                    level1.deck[i]!.id
+                );
+            }
+        });
+
+        it("does not make 0 the correct answer for the first question", () => {
+            // with H-A hidden, P(Ace | red) = 1/4
+            expect(model.getCorrectAnswer()).toBe(1 / 4);
         });
 
         it("does not start waiting for Next Question", () => {
@@ -187,6 +220,18 @@ describe("GameScreenModel", () => {
                     initialQuestion
                 );
             }
+        });
+
+        it("reveals another clue and narrows the cards on Next Question", () => {
+            const before = model.getState().remainingPossibleCards.length;
+
+            model.submitAnswer(correctAnswer());
+            model.nextQuestion();
+
+            const state = model.getState();
+
+            expect(state.knownInformation.length).toBe(2);
+            expect(state.remainingPossibleCards.length).toBeLessThan(before);
         });
 
         it("prevents repeated Next Question clicks from skipping", () => {
