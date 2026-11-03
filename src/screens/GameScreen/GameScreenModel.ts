@@ -29,6 +29,7 @@ const questions: ProbabilityQuestion[] = [
 export class GameScreenModel {
     private state: GameState;
     private waitingForNext = false;
+    private level: Level | null;
 
     constructor() {
         // nil value for now
@@ -47,6 +48,7 @@ export class GameScreenModel {
             "status": "playing",
             "strikes": 0
         };
+        this.level = null;
     }
 
     private initGameStateFromLevel(level: Level): GameState {
@@ -66,8 +68,15 @@ export class GameScreenModel {
         }
     }
 
-    initLevel(level: Level): void {
-        this.state = this.initGameStateFromLevel(level);
+    setLevel(level: Level): void {
+        this.level = level;
+        this.reset();
+    }
+
+    reset(): void {
+        if (this.level !== null) {
+            this.state = this.initGameStateFromLevel(this.level);
+        }
         this.waitingForNext = false;
     }
 

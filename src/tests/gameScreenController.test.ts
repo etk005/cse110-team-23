@@ -62,7 +62,7 @@ describe("GameScreenController", () => {
         const state = currentState();
 
         const testModel = new GameScreenModel();
-        testModel.initLevel(level1);
+        testModel.setLevel(level1);
         const testState = testModel.getState();
 
         testState.remainingPossibleCards = state.remainingPossibleCards;
@@ -99,7 +99,8 @@ describe("GameScreenController", () => {
         };
 
         controller = new GameScreenController(screenSwitcher);
-        controller.startGame(level1);
+        controller.setLevel(level1);
+        controller.startGame();
     });
 
     it("shows the game when starting", () => {
@@ -180,7 +181,7 @@ describe("GameScreenController", () => {
     it("resets when starting a new game", () => {
         viewMock.onAnswer?.(wrongAnswer());
 
-        controller.startGame(level1);
+        controller.startGame();
 
         expect(currentState().strikes).toBe(0);
         expect(currentState().questionsAnswered).toBe(0);

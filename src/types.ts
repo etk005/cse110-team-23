@@ -7,7 +7,7 @@ import type { Loader } from "./screens/LoadingScreen/LoadingScreenController";
  * */
 export type Screen =
     | { type: "menu" }
-    | { type: "game", level: Level }
+    | { type: "game", level?: Level }
     | { type: "result"; score: number }
     | { type: "levels" }
     | { type: "loading"; loader: Loader };

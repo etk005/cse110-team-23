@@ -24,7 +24,7 @@ describe("GameScreenModel", () => {
 
     beforeEach(() => {
         model = new GameScreenModel();
-        model.initLevel(level1);
+        model.setLevel(level1);
     });
 
     function correctAnswer(): string {
@@ -69,7 +69,7 @@ describe("GameScreenModel", () => {
 
         it("keeps separate game instances independent", () => {
             const secondModel = new GameScreenModel();
-            secondModel.initLevel(level1);
+            secondModel.setLevel(level1);
 
             model.submitAnswer(wrongAnswer());
 
@@ -130,7 +130,7 @@ describe("GameScreenModel", () => {
             const invalidAnswers = ["abc", "1/0", "0/0", "Infinity"];
 
             for (const answer of invalidAnswers) {
-                model.initLevel(level1);
+                model.reset();
 
                 expect(model.submitAnswer(answer)).toBe(false);
             }
@@ -265,7 +265,7 @@ describe("GameScreenModel", () => {
 
         it("resets progress and strikes", () => {
             model.submitAnswer(wrongAnswer());
-            model.initLevel(level1);
+            model.reset();
 
             const state = model.getState();
 
@@ -279,7 +279,7 @@ describe("GameScreenModel", () => {
 
             expect(model.isWaitingForNext()).toBe(true);
 
-            model.initLevel(level1);
+            model.reset();
 
             expect(model.isWaitingForNext()).toBe(false);
         });
@@ -288,7 +288,7 @@ describe("GameScreenModel", () => {
             const initialState = structuredClone(model.getState());
 
             model.submitAnswer(wrongAnswer());
-            model.initLevel(level1);
+            model.reset();
 
             expect(model.getState()).toEqual({
                 ...initialState,

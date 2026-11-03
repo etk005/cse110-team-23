@@ -28,10 +28,14 @@ export class GameScreenController extends ScreenController {
     /** 
      * Resets the model and renders the initial game state. 
      * */
-    startGame(level: Level): void {
-        this.model.initLevel(level);
+    startGame(): void {
+        this.model.reset();
         this.updateView();
         this.show();
+    }
+
+    setLevel(level: Level): void {
+        this.model.setLevel(level);
     }
 
     private handleAnswer(answer: string): void {
