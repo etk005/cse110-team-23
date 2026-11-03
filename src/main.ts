@@ -96,7 +96,7 @@ class App implements ScreenSwitcher {
                 break;
 
             case "result":
-                this.resultsController.showResults(screen.score);
+                this.resultsController.showResults(screen);
                 break;
 
             case "levels":

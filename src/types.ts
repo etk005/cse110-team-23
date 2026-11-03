@@ -1,5 +1,5 @@
 import Konva from "konva";
-import type { Level } from "./shared/types";
+import type { Card, Level } from "./shared/types";
 import type { Loader } from "./screens/LoadingScreen/LoadingScreenController";
 
 /** 
@@ -8,7 +8,14 @@ import type { Loader } from "./screens/LoadingScreen/LoadingScreenController";
 export type Screen =
     | { type: "menu" }
     | { type: "game", level?: Level }
-    | { type: "result"; score: number }
+    | {
+        type: "result";
+        score: number;
+        status: "won" | "lost";
+        levelId: number;
+        questionsRequired: number;
+        hiddenCard: Card | null;
+    }
     | { type: "levels" }
     | { type: "loading"; loader: Loader };
 

@@ -39,6 +39,7 @@ export interface GameState {
 
   // whether hidden card has been revealed
   hiddenCard: {
+    card: Card | null;
     isRevealed: boolean;
   };
 

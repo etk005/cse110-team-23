@@ -1,6 +1,7 @@
 
 import Konva from "konva";
 import type { View } from "../../types.ts";
+import type { Screen } from "../../types.ts";
 import {
     STAGE_WIDTH,
     STAGE_HEIGHT,
@@ -9,12 +10,13 @@ import {
 } from "../../constants.ts";
 
 const c = RESULTS_SCREEN_CONSTANTS;
+type ResultState = Extract<Screen, { type: "result" }>;
 
 /** Renders the end-of-level screen with title, score, and Play Again / Main Menu buttons. */
 export class ResultsScreenView implements View {
     private group: Konva.Group;
 
-    constructor(onRestart: () => void, onMenu: () => void) {
+    constructor(onRetry: () => void, onNextLevel: () => void, onLobby: () => void) {
         this.group = new Konva.Group({ visible: false });
 
         const background = new Konva.Rect({
@@ -25,11 +27,12 @@ export class ResultsScreenView implements View {
 
         this.group.add(background);
 
-        this.addButton("Play Again", c.PLAY_AGAIN_X, c.BUTTON_Y, onRestart);
-        this.addButton("Main Menu", c.MENU_X, c.BUTTON_Y, onMenu);
+        this.addButton("Retry", c.RETRY_X, c.BUTTON_Y, onRetry);
+        this.addButton("Next Level", c.NEXT_LEVEL_X, c.BUTTON_Y, onNextLevel);
+        this.addButton("Lobby", c.LOBBY_X, c.BUTTON_Y, onLobby);
     }
 
-    render(score: number, won: boolean): void {
+    render(result: ResultState): void {
         this.group.find(".resultText").forEach((node) => node.destroy());
 
         const title = new Konva.Text({
@@ -37,7 +40,7 @@ export class ResultsScreenView implements View {
             x: c.TEXT_X,
             y: c.TITLE_Y,
             width: c.TEXT_WIDTH,
-            text: won ? "LEVEL COMPLETE!" : "GAME OVER",
+            text: result.status === "won" ? "LEVEL COMPLETE!" : "LEVEL FAILED",
             fontSize: c.TITLE_FONT_SIZE,
             fontFamily: "Arial",
             fill: COLORS.accent,
@@ -49,14 +52,28 @@ export class ResultsScreenView implements View {
             x: c.TEXT_X,
             y: c.SCORE_Y,
             width: c.TEXT_WIDTH,
-            text: `Questions Answered: ${score}/3`,
+            text: `Questions Answered: ${result.score}/${result.questionsRequired}`,
             fontSize: c.SCORE_FONT_SIZE,
             fontFamily: "Arial",
             fill: COLORS.text,
             align: "center",
         });
 
-        this.group.add(title, scoreText);
+        const hiddenCardText = new Konva.Text({
+            name: "resultText",
+            x: c.TEXT_X,
+            y: c.CARD_Y,
+            width: c.TEXT_WIDTH,
+            text: result.hiddenCard
+                ? `Hidden Card: ${result.hiddenCard.rank} of ${result.hiddenCard.suit}`
+                : "Hidden Card: Unknown",
+            fontSize: c.CARD_FONT_SIZE,
+            fontFamily: "Arial",
+            fill: COLORS.text,
+            align: "center",
+        });
+
+        this.group.add(title, scoreText, hiddenCardText);
         this.group.getLayer()?.draw();
     }
 

@@ -38,7 +38,10 @@ export class GameScreenModel {
             "currentQuestion": null,
             "deck": [],
             "gameId": "",
-            "hiddenCard": { "isRevealed": false },
+            "hiddenCard": {
+                "card": null,
+                "isRevealed": false
+            },
             "knownInformation": [],
             "levelId": 0,
             "maxStrikes": 0,
@@ -56,7 +59,10 @@ export class GameScreenModel {
             currentQuestion: null,
             deck: level.deck,
             gameId: crypto.randomUUID(),
-            hiddenCard: { isRevealed: false },
+            hiddenCard: {
+                card: level.deck[0] ?? null,
+                isRevealed: false
+            },
             knownInformation: [],
             levelId: level.id,
             maxStrikes: level.maxStrikes,
@@ -155,12 +161,14 @@ export class GameScreenModel {
 
             if (this.state.questionsAnswered >= this.state.questionsRequired) {
                 this.state.status = "won";
+                this.state.hiddenCard.isRevealed = true;
             }
         } else {
             this.state.strikes++;
 
             if (this.state.strikes >= this.state.maxStrikes) {
                 this.state.status = "lost";
+                this.state.hiddenCard.isRevealed = true;
             }
         }
 

@@ -13,29 +13,64 @@ describe("ResultsScreenModel", () => {
         expect(model.getScore()).toBe(0);
     });
 
-    it("stores the provided score", () => {
-        model.setScore(2);
+    it("stores the provided result", () => {
+        model.setResult({
+            type: "result",
+            score: 2,
+            status: "lost",
+            levelId: 1,
+            questionsRequired: 3,
+            hiddenCard: null,
+        });
 
         expect(model.getScore()).toBe(2);
     });
 
     it("recognizes a completed level", () => {
-        model.setScore(3);
+        model.setResult({
+            type: "result",
+            score: 1,
+            status: "won",
+            levelId: 1,
+            questionsRequired: 3,
+            hiddenCard: null,
+        });
 
         expect(model.isWin()).toBe(true);
     });
 
     it("recognizes an incomplete level", () => {
-        model.setScore(1);
+        model.setResult({
+            type: "result",
+            score: 3,
+            status: "lost",
+            levelId: 1,
+            questionsRequired: 3,
+            hiddenCard: null,
+        });
 
         expect(model.isWin()).toBe(false);
     });
 
     it("updates results between games", () => {
-        model.setScore(3);
+        model.setResult({
+            type: "result",
+            score: 3,
+            status: "won",
+            levelId: 1,
+            questionsRequired: 3,
+            hiddenCard: null,
+        });
         expect(model.isWin()).toBe(true);
 
-        model.setScore(0);
+        model.setResult({
+            type: "result",
+            score: 0,
+            status: "lost",
+            levelId: 2,
+            questionsRequired: 3,
+            hiddenCard: null,
+        });
 
         expect(model.getScore()).toBe(0);
         expect(model.isWin()).toBe(false);
@@ -44,7 +79,14 @@ describe("ResultsScreenModel", () => {
     it("keeps separate results instances independent", () => {
         const secondModel = new ResultsScreenModel();
 
-        model.setScore(3);
+        model.setResult({
+            type: "result",
+            score: 3,
+            status: "won",
+            levelId: 1,
+            questionsRequired: 3,
+            hiddenCard: null,
+        });
 
         expect(secondModel.getScore()).toBe(0);
     });

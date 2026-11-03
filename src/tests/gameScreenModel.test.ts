@@ -218,6 +218,7 @@ describe("GameScreenModel", () => {
 
             expect(model.getState().status).toBe("lost");
             expect(model.getState().strikes).toBe(maxStrikes);
+            expect(model.getState().hiddenCard.isRevealed).toBe(true);
         });
 
         it("does not accept answers after losing", () => {
@@ -252,6 +253,7 @@ describe("GameScreenModel", () => {
             expect(model.getState().questionsAnswered).toBe(
                 model.getState().questionsRequired
             );
+            expect(model.getState().hiddenCard.isRevealed).toBe(true);
         });
 
         it("does not accept answers after winning", () => {

@@ -175,6 +175,31 @@ describe("GameScreenController", () => {
         expect(switchToScreen).toHaveBeenCalledWith({
             type: "result",
             score: 0,
+            status: "lost",
+            levelId: 1,
+            questionsRequired: 3,
+            hiddenCard: level1.deck[0],
+        });
+    });
+
+    it("opens results when all required questions are answered", () => {
+        const required = currentState().questionsRequired;
+
+        for (let i = 0; i < required; i++) {
+            viewMock.onAnswer?.(correctAnswer());
+            if (i < required - 1) {
+                viewMock.onNext?.();
+            }
+        }
+        viewMock.onNext?.();
+
+        expect(switchToScreen).toHaveBeenCalledWith({
+            type: "result",
+            score: required,
+            status: "won",
+            levelId: 1,
+            questionsRequired: 3,
+            hiddenCard: level1.deck[0],
         });
     });
 

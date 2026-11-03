@@ -72,9 +72,14 @@ export class GameScreenController extends ScreenController {
     }
 
     private showResults(): void {
+        const state = this.model.getState();
         this.screenSwitcher.switchToScreen({
             type: "result",
-            score: this.model.getState().questionsAnswered,
+            score: state.questionsAnswered,
+            status: state.status === "lost" ? "lost" : "won",
+            levelId: state.levelId,
+            questionsRequired: state.questionsRequired,
+            hiddenCard: state.hiddenCard.card,
         });
     }
 

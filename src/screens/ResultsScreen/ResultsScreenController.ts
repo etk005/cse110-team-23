@@ -1,6 +1,7 @@
 
 import { ScreenController } from "../../types.ts";
-import type { ScreenSwitcher } from "../../types.ts";
+import type { Screen, ScreenSwitcher } from "../../types.ts";
+import { levelSchema } from "../../shared/schemas.ts";
 import { ResultsScreenModel } from "./ResultsScreenModel.ts";
 import { ResultsScreenView } from "./ResultsScreenView.ts";
 
@@ -8,28 +9,54 @@ import { ResultsScreenView } from "./ResultsScreenView.ts";
 export class ResultsScreenController extends ScreenController {
     private model: ResultsScreenModel;
     private view: ResultsScreenView;
+    private screenSwitcher: ScreenSwitcher;
 
     constructor(screenSwitcher: ScreenSwitcher) {
         super();
+        this.screenSwitcher = screenSwitcher;
 
         this.model = new ResultsScreenModel();
 
         this.view = new ResultsScreenView(
-            () => screenSwitcher.switchToScreen({ type: "game" }),
-            () => screenSwitcher.switchToScreen({ type: "menu" })
+            () => this.screenSwitcher.switchToScreen({ type: "game" }),
+            () => this.goToNextLevel(),
+            () => this.screenSwitcher.switchToScreen({ type: "levels" })
         );
     }
 
     /** Stores the score, renders the results, and shows the screen. */
-    showResults(score: number): void {
-        this.model.setScore(score);
+    showResults(result: Extract<Screen, { type: "result" }>): void {
+        this.model.setResult(result);
 
         this.view.render(
-            this.model.getScore(),
-            this.model.isWin()
+            this.model.getResult()
         );
 
         this.show();
+    }
+
+    private goToNextLevel(): void {
+        const currentLevelId = this.model.getResult().levelId;
+        const nextLevelId = currentLevelId + 1;
+
+        this.screenSwitcher.switchToScreen({
+            type: "loading",
+            loader: async (): Promise<Screen> => {
+                try {
+                    const response = await fetch(`levels/${nextLevelId}.json`);
+                    if (!response.ok) {
+                        return { type: "levels" };
+                    }
+
+                    const levelData = await response.json();
+                    const level = levelSchema.parse(levelData);
+
+                    return { type: "game", level };
+                } catch {
+                    return { type: "levels" };
+                }
+            },
+        });
     }
 
     getView(): ResultsScreenView {
