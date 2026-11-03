@@ -34,11 +34,43 @@ export class GameScreenController extends ScreenController {
     }
 
     private handleAnswer(answer: string): void {
-        void answer; // probability submission — Issue #7
+        if (this.model.isWaitingForNext()) {
+            return;
+        }
+
+        const correct = this.model.submitAnswer(answer);
+        const state = this.model.getState();
+
+        if (correct) {
+            this.updateView("Correct! Great job!", true);
+        } else if (state.status === "lost") {
+            this.showResults();
+        } else {
+            this.updateView("Incorrect! Try again.");
+        }
     }
 
     private handleNext(): void {
-        // question progression — Issue #7
+        if (!this.model.isWaitingForNext()) {
+            return;
+        }
+
+        const state = this.model.getState();
+
+        if (state.status === "won") {
+            this.showResults();
+            return;
+        }
+
+        this.model.nextQuestion();
+        this.updateView();
+    }
+
+    private showResults(): void {
+        this.screenSwitcher.switchToScreen({
+            type: "result",
+            score: this.model.getState().questionsAnswered,
+        });
     }
 
     private updateView(

@@ -153,7 +153,7 @@ export class GameScreenView implements View {
             new Konva.Text({
                 x: pad,
                 y: rowY + rowHeight + layout.PANEL_HINT_GAP,
-                text: "Enter a fraction, decimal, or percentage.",
+                text: "Enter a fraction or decimal, like 1/4 or 0.25.",
                 fontSize: layout.PANEL_HINT_FONT_SIZE,
                 fontFamily: "Arial",
                 fill: layout.PANEL_HINT_TEXT,
