@@ -1,6 +1,7 @@
 
 import type { Card } from "../shared/types";
 
+/** Configuration for a single level: deck, strike limit, and question count. */
 export interface LevelConfig {
   id: number;
   name: string;

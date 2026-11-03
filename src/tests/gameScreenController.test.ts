@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Screen, ScreenSwitcher } from "../types.ts";
+import { GameScreenModel } from "../screens/GameScreen/GameScreenModel.ts";
 
 const viewMock = vi.hoisted(() => ({
     onAnswer: undefined as ((answer: string) => void) | undefined,
@@ -38,6 +39,37 @@ describe("GameScreenController", () => {
         return viewMock.render.mock.lastCall?.[0];
     }
 
+    function correctAnswer(): string {
+        const options = viewMock.render.mock.lastCall?.[1] as string[];
+        const state = currentState();
+
+        const testModel = new GameScreenModel();
+        const testState = testModel.getState();
+
+        testState.remainingPossibleCards = state.remainingPossibleCards;
+        testState.currentQuestion = state.currentQuestion;
+
+        const expected = testModel.getCorrectAnswer();
+
+        const matchingOption = options.find((option) => {
+            const parts = option.split("/");
+            const value = parts.length === 2
+                ? Number(parts[0]) / Number(parts[1])
+                : Number(option);
+
+            return value === expected;
+        });
+
+        expect(matchingOption).toBeDefined();
+
+        return matchingOption!;
+    }
+
+    function wrongAnswer(): string {
+        const answer = Number(correctAnswer());
+        return answer === 0 ? "1" : "0";
+    }
+
     beforeEach(() => {
         vi.clearAllMocks();
 
@@ -62,6 +94,28 @@ describe("GameScreenController", () => {
         expect(currentState().questionsAnswered).toBe(0);
     });
 
+    it("does not skip unanswered questions", () => {
+        const originalQuestion = currentState().currentQuestion;
+
+        viewMock.onNext?.();
+
+        expect(currentState().currentQuestion).toEqual(originalQuestion);
+    });
+
+    it("advances when Next Question is clicked", () => {
+        const originalQuestion = currentState().currentQuestion;
+
+        viewMock.onAnswer?.(correctAnswer());
+
+        if (currentState().status === "playing") {
+            viewMock.onNext?.();
+
+            expect(currentState().currentQuestion).not.toEqual(
+                originalQuestion
+            );
+        }
+    });
+
     it("returns to the menu", () => {
         viewMock.onMenu?.();
 
@@ -69,4 +123,6 @@ describe("GameScreenController", () => {
             type: "menu",
         });
     });
+
+    void wrongAnswer;
 });
