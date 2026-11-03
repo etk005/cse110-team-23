@@ -16,6 +16,10 @@ class App implements ScreenSwitcher {
     private resultsController: ResultsScreenController;
 
     constructor(container: string) {
+        // Draw at the screen's real pixel density so it's sharp on retina displays
+        // (must be set before the stage is created)
+        Konva.pixelRatio = window.devicePixelRatio;
+
         // Set up the Konva stage and layer for rendering screens
         this.stage = new Konva.Stage({
             container,
@@ -36,14 +40,38 @@ class App implements ScreenSwitcher {
         this.layer.add(this.gameController.getView().getGroup());
         this.layer.add(this.resultsController.getView().getGroup());
 
+        window.addEventListener("resize", () => this.fitStageToViewport());
+
         this.layer.draw();
+        this.fitStageToViewport();
         this.menuController.show();
+    }
+
+    // Scale the 1920x1080 stage to fit the browser window, keeping its shape
+    private fitStageToViewport(): void {
+        const viewportWidth = document.documentElement.clientWidth;
+        const viewportHeight = document.documentElement.clientHeight;
+
+        const scale = Math.min(
+            viewportWidth / STAGE_WIDTH,
+            viewportHeight / STAGE_HEIGHT
+        );
+
+        // The stage is the real on-screen size; scale() maps the 1920x1080
+        // design coordinates onto it. Do not also resize the canvas with CSS,
+        // or the drawing is shrunk twice and ends up off-center.
+        this.stage.width(STAGE_WIDTH * scale);
+        this.stage.height(STAGE_HEIGHT * scale);
+        this.stage.scale({ x: scale, y: scale });
+
+        this.stage.batchDraw();
     }
 
     // Hide the current screen and display the requested screen
     switchToScreen(screen: Screen): void {
         this.menuController.hide();
         this.gameController.hide();
+        this.resultsController.hide();
 
         switch (screen.type) {
             case "menu":
