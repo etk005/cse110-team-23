@@ -121,6 +121,7 @@ export class GameScreenView implements View {
         );
 
         this.addRemainingPanel(state.remainingPossibleCards);
+        this.addResourcesBar(state.deck);
 
         // Hidden card
         Konva.Image.fromURL("/card.png", (card) => {
@@ -488,12 +489,91 @@ export class GameScreenView implements View {
                 fill: c.PANEL_TEXT,
             })
         );
-        this.makeClickable(button, () => this.showPossibleCards(cards));
+        this.makeClickable(button, () => this.showCardsPopup("Possible Cards", cards));
         panel.add(button);
     }
 
+    /**
+     * Bottom bar: "Resources" + Formulas / Calculator / Rules (placeholders,
+     * no action yet) and View Deck, which shows the level's full deck.
+     */
+    private addResourcesBar(deck: Card[]): void {
+        const c = GAME_SCREEN_CONSTANTS;
+        const pad = c.PANEL_PADDING;
+        const bar = new Konva.Group({ x: c.RESOURCES_BAR_X, y: c.RESOURCES_BAR_Y });
+        bar.add(
+            new Konva.Rect({
+                width: c.RESOURCES_BAR_WIDTH,
+                height: c.RESOURCES_BAR_HEIGHT,
+                fill: c.PANEL_FILL,
+                cornerRadius: c.PANEL_RADIUS,
+            })
+        );
+
+        const title = new Konva.Text({
+            x: pad * 2,
+            height: c.RESOURCES_BAR_HEIGHT,
+            verticalAlign: "middle",
+            text: "Resources",
+            fontSize: c.RESOURCES_TITLE_FONT_SIZE,
+            fontFamily: "Georgia, serif",
+            fill: c.PANEL_TEXT,
+        });
+        bar.add(title);
+
+        const buttons: [string, (() => void) | null][] = [
+            ["Formulas", null],
+            ["Calculator", null],
+            ["Rules / Tutorial", null],
+            ["View Deck", () => this.showCardsPopup("Full Deck", deck)],
+        ];
+        let x = title.x() + title.width() + pad * 1.5;
+        const y = (c.RESOURCES_BAR_HEIGHT - c.BUTTON_HEIGHT) / 2;
+        for (const [label, onClick] of buttons) {
+            const button = this.makeOutlineButton(label, x, y);
+            if (onClick) {
+                this.makeClickable(button, onClick);
+            }
+            bar.add(button);
+            x += button.width() + c.RESOURCES_BUTTON_GAP;
+        }
+
+        this.group.add(bar);
+    }
+
+    /** Cream button with a tan outline, sized to fit its label. */
+    private makeOutlineButton(label: string, x: number, y: number): Konva.Group {
+        const c = GAME_SCREEN_CONSTANTS;
+        const text = new Konva.Text({
+            text: label,
+            padding: c.INPUT_PADDING_X * 1.2,
+            height: c.BUTTON_HEIGHT,
+            verticalAlign: "middle",
+            fontSize: c.BUTTON_FONT_SIZE * 0.85,
+            fontStyle: "bold",
+            fontFamily: "Arial",
+            fill: c.PANEL_TEXT,
+        });
+        const button = new Konva.Group({ x, y, width: text.width() });
+        // Konva.Text padding applies vertically too; keep the label centered
+        text.padding(0);
+        text.x(c.INPUT_PADDING_X * 1.2);
+        button.add(
+            new Konva.Rect({
+                width: button.width(),
+                height: c.BUTTON_HEIGHT,
+                fill: c.OUTLINE_BUTTON_FILL,
+                stroke: c.OUTLINE_BUTTON_BORDER,
+                strokeWidth: 2,
+                cornerRadius: c.BUTTON_RADIUS,
+            }),
+            text
+        );
+        return button;
+    }
+
     /** Popup listing every remaining possible card as a mini card tile. */
-    private showPossibleCards(cards: Card[]): void {
+    private showCardsPopup(title: string, cards: Card[]): void {
         if (this.modalOpen) {
             return;
         }
@@ -526,7 +606,7 @@ export class GameScreenView implements View {
             panelY,
             c.MODAL_WIDTH,
             c.MODAL_HEIGHT,
-            `Possible Cards (${cards.length})`
+            `${title} (${cards.length})`
         );
 
         // Grid of mini cards, sorted by suit then rank
