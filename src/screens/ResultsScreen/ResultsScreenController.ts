@@ -3,14 +3,18 @@ import { ScreenController } from "../../types.ts";
 import type { ScreenSwitcher } from "../../types.ts";
 import { ResultsScreenModel } from "./ResultsScreenModel.ts";
 import { ResultsScreenView } from "./ResultsScreenView.ts";
+import type { PlayerResources } from "../../game/playerResources.ts";
 
-/** Controls the results screen: displays final score and routes Play Again / Main Menu. */
+/** Controls the results screen: displays the level's points and totals, and routes Play Again / Main Menu. */
 export class ResultsScreenController extends ScreenController {
     private model: ResultsScreenModel;
     private view: ResultsScreenView;
+    private resources: PlayerResources;
 
-    constructor(screenSwitcher: ScreenSwitcher) {
+    constructor(screenSwitcher: ScreenSwitcher, resources: PlayerResources) {
         super();
+
+        this.resources = resources;
 
         this.model = new ResultsScreenModel();
 
@@ -20,13 +24,15 @@ export class ResultsScreenController extends ScreenController {
         );
     }
 
-    /** Stores the score, renders the results, and shows the screen. */
-    showResults(score: number): void {
-        this.model.setScore(score);
+    /** Stores the outcome, renders the results, and shows the screen. */
+    showResults(won: boolean, points: number): void {
+        this.model.setResult(won, points);
 
         this.view.render(
-            this.model.getScore(),
-            this.model.isWin()
+            this.model.getPoints(),
+            this.model.isWin(),
+            this.resources.getScore(),
+            this.resources.getCoins()
         );
 
         this.show();

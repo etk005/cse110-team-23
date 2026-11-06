@@ -17,6 +17,12 @@ export class GameScreenView implements View {
     private onMenu: () => void;
     private onNext: () => void;
 
+    // coins and score readout, updated without a full re-render
+    private coins = 0;
+    private score = 0;
+    private coinsText: Konva.Text | null = null;
+    private scoreText: Konva.Text | null = null;
+
     // HTML text input drawn on top of the canvas (created on first use)
     private overlay: HTMLDivElement | null = null;
     private input: HTMLInputElement | null = null;
@@ -107,6 +113,21 @@ export class GameScreenView implements View {
             layout.STATS_Y_PROGRESS,
             layout.STATS_FONT_SIZE
         );
+
+        this.coinsText = this.addText(
+            "",
+            layout.RESOURCES_X,
+            layout.STATS_Y_STRIKES,
+            layout.STATS_FONT_SIZE
+        );
+
+        this.scoreText = this.addText(
+            "",
+            layout.RESOURCES_X,
+            layout.STATS_Y_PROGRESS,
+            layout.STATS_FONT_SIZE
+        );
+        this.setResourceText();
 
         // Hidden card
         Konva.Image.fromURL("/card.png", (card) => {
@@ -246,6 +267,19 @@ export class GameScreenView implements View {
         this.focusInput();
     }
 
+    /** Shows new coin and score values. */
+    updateResources(coins: number, score: number): void {
+        this.coins = coins;
+        this.score = score;
+        this.setResourceText();
+        this.group.getLayer()?.batchDraw();
+    }
+
+    private setResourceText(): void {
+        this.coinsText?.text(`Coins: ${this.coins}`);
+        this.scoreText?.text(`Score: ${this.score}`);
+    }
+
     // ---- HTML text input -------------------------------------------------
     // Konva can't draw a text box you can type in, so the input is a real
     // <input> placed on top of the canvas. The overlay <div> is the same size
@@ -357,7 +391,7 @@ export class GameScreenView implements View {
         y: number,
         fontSize: number,
         color = COLORS.text
-    ): void {
+    ): Konva.Text {
         const label = new Konva.Text({
             x,
             y,
@@ -368,6 +402,7 @@ export class GameScreenView implements View {
         });
 
         this.group.add(label);
+        return label;
     }
 
     private addButton(
