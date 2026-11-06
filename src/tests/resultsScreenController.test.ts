@@ -1,6 +1,7 @@
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Screen, ScreenSwitcher } from "../types.ts";
+import { PlayerResources } from "../game/playerResources.ts";
 
 const viewMock = vi.hoisted(() => ({
     onRestart: undefined as (() => void) | undefined,
@@ -31,6 +32,7 @@ import { ResultsScreenController } from "../screens/ResultsScreen/ResultsScreenC
 describe("ResultsScreenController", () => {
     let controller: ResultsScreenController;
     let switchToScreen: ReturnType<typeof vi.fn<(screen: Screen) => void>>;
+    let resources: PlayerResources;
 
     beforeEach(() => {
         vi.clearAllMocks();
@@ -41,20 +43,31 @@ describe("ResultsScreenController", () => {
             switchToScreen,
         };
     
-        controller = new ResultsScreenController(screenSwitcher);
+        resources = new PlayerResources(10);
+        controller = new ResultsScreenController(screenSwitcher, resources);
     });
     
-    it("displays the provided final score", () => {
-        controller.showResults(2);
+    it("displays a failed level", () => {
+        controller.showResults(false, 0);
 
-        expect(viewMock.render).toHaveBeenCalledWith(2, false);
+        expect(viewMock.render).toHaveBeenCalledWith(0, false, 0, 10);
         expect(viewMock.show).toHaveBeenCalled();
     });
 
     it("displays successful completion", () => {
-        controller.showResults(3);
+        controller.showResults(true, 8);
 
-        expect(viewMock.render).toHaveBeenCalledWith(3, true);
+        expect(viewMock.render).toHaveBeenCalledWith(8, true, 0, 10);
+    });
+
+    it("displays the shared total score and coins", () => {
+        resources.recordLevelResult(1, 8);
+        resources.recordLevelResult(2, 10);
+        resources.spendCoins(3);
+
+        controller.showResults(true, 10);
+
+        expect(viewMock.render).toHaveBeenCalledWith(10, true, 18, 7);
     });
 
     it("restarts the game when Play Again is clicked", () => {
@@ -74,9 +87,9 @@ describe("ResultsScreenController", () => {
     });
 
     it("updates the results on subsequent games", () => {
-        controller.showResults(3);
-        controller.showResults(1);
+        controller.showResults(true, 10);
+        controller.showResults(false, 0);
 
-        expect(viewMock.render).toHaveBeenLastCalledWith(1, false);
+        expect(viewMock.render).toHaveBeenLastCalledWith(0, false, 0, 10);
     });
 });

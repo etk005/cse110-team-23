@@ -1,17 +1,19 @@
 
-/** Holds the final score for the completed or failed level. */
+/** Holds the outcome of the completed or failed level. */
 export class ResultsScreenModel {
-    private score = 0;
+    private won = false;
+    private points = 0;
 
-    setScore(score: number): void {
-        this.score = score;
+    setResult(won: boolean, points: number): void {
+        this.won = won;
+        this.points = points;
     }
 
-    getScore(): number {
-        return this.score;
+    getPoints(): number {
+        return this.points;
     }
 
     isWin(): boolean {
-        return this.score >= 3;
+        return this.won;
     }
 }
