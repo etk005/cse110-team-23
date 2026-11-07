@@ -179,6 +179,45 @@ export const RESULTS_SCREEN_CONSTANTS = {
     BUTTON_FONT_SIZE: H / 33,
 };
 
+// Left column holds the title, stats panel and card grid (right side is left free)
+const RR_LEFT_X = W / 36;
+const RR_LEFT_WIDTH = W * 0.57;
+
+export const RISK_REWARD_SCREEN_CONSTANTS = {
+    LEFT_X: RR_LEFT_X,
+    LEFT_WIDTH: RR_LEFT_WIDTH,
+
+    TITLE_Y: H / 40,
+    TITLE_FONT_SIZE: H / 11,
+
+    STATS_PANEL_Y: H / 7,
+    STATS_COLUMNS: 3,
+    STAT_HEIGHT: H / 15,
+    STAT_GAP: W / 150,
+    STAT_PADDING: H / 90,
+    STAT_LABEL_FONT_SIZE: H / 75,
+    STAT_VALUE_FONT_SIZE: H / 38,
+    PANEL_PADDING: W / 120,
+
+    GRID_PANEL_GAP: H / 45,
+    GRID_COLUMNS: 7,
+    CARD_HEIGHT: H / 6.2,
+    CARD_GAP: W / 110,
+    CARD_FONT_SIZE: H / 32,
+    GRID_PADDING: W / 60,
+
+    CARD_FILL: "#fffdf4",
+    CARD_STROKE: "#d9cfae",
+    PANEL_FILL: "#2c5a34",
+    GRID_FILL: "#183a1f",
+    PANEL_STROKE: "#c9a646",
+    RISK_COLOR: "#b62335",
+    REWARD_COLOR: "#3f8a2f",
+    TITLE_REWARD_COLOR: "#7ee08a",
+    RADIUS: H / 75,
+    PANEL_RADIUS: H / 50,
+};
+
 export const COLORS = {
     background: "#07451c",
     panel: "#b62335",
