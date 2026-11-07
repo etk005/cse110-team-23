@@ -10,6 +10,7 @@ export type Screen =
     | { type: "game", level?: Level }
     | { type: "result"; score: number }
     | { type: "levels" }
+    | { type: "riskReward" }
     | { type: "loading"; loader: Loader };
 
 /** 
