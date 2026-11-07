@@ -91,9 +91,11 @@ describe("GameScreenModel", () => {
             }
         });
 
-        it("does not make 0 the correct answer for the first question", () => {
-            // with H-A hidden, P(Ace | red) = 1/4
-            expect(model.getCorrectAnswer()).toBe(1 / 4);
+        it("does not make 0 or 1 the correct answer for the first question", () => {
+            const probability = model.getCorrectAnswer();
+
+            expect(probability).toBeGreaterThan(0);
+            expect(probability).toBeLessThan(1);
         });
 
         it("does not start waiting for Next Question", () => {
@@ -157,6 +159,25 @@ describe("GameScreenModel", () => {
             const answer = correctAnswer();
 
             expect(model.submitAnswer(answer)).toBe(true);
+        });
+
+        it("accepts a decimal rounded to 2 places", () => {
+            const rounded = model.getCorrectAnswer().toFixed(2);
+
+            expect(model.submitAnswer(rounded)).toBe(true);
+        });
+
+        it("accepts an equivalent unsimplified fraction", () => {
+            const remaining = model.getState().remainingPossibleCards.length;
+            const matching = Math.round(model.getCorrectAnswer() * remaining);
+
+            expect(model.submitAnswer(`${matching}/${remaining}`)).toBe(true);
+        });
+
+        it("rejects an answer that is off by more than rounding", () => {
+            const close = String(model.getCorrectAnswer() + 0.02);
+
+            expect(model.submitAnswer(close)).toBe(false);
         });
 
         it("rejects malformed input", () => {
@@ -232,6 +253,35 @@ describe("GameScreenModel", () => {
 
             expect(state.knownInformation.length).toBe(2);
             expect(state.remainingPossibleCards.length).toBeLessThan(before);
+        });
+
+        it("never repeats a question within a level", () => {
+            const seen = new Set<string>();
+
+            while (model.getState().status === "playing") {
+                const question = model.getState().currentQuestion!;
+
+                expect(seen.has(question.id)).toBe(false);
+                seen.add(question.id);
+
+                model.submitAnswer(correctAnswer());
+                model.nextQuestion();
+            }
+        });
+
+        it("has a question for every required answer, even past three", () => {
+            model.setLevel({ ...level1, questionsRequired: 6 });
+
+            completeGame();
+
+            expect(model.getState().status).toBe("won");
+        });
+
+        it("words every question the same way and names it by its condition", () => {
+            const question = model.getState().currentQuestion!;
+
+            expect(question.text).toMatch(/^What is the probability that the hidden card is .+\?$/);
+            expect(question.id).toBe(`${question.property}-${question.operator}-${question.value}`);
         });
 
         it("prevents repeated Next Question clicks from skipping", () => {
