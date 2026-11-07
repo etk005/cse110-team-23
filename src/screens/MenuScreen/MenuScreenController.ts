@@ -15,6 +15,7 @@ export class MenuScreenController extends ScreenController {
         this.screenSwitcher = screenSwitcher;
         this.view = new MenuScreenView(
             () => this.handleStartClick(),
+            // Risk/Reward button goes straight to the minigame
             () => this.screenSwitcher.switchToScreen({ type: "riskReward" })
         );
     }

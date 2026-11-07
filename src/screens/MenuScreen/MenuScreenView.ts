@@ -5,6 +5,10 @@ import { STAGE_WIDTH, COLORS, MENU_SCREEN_CONSTANTS } from "../../constants.ts";
 export class MenuScreenView implements View {
     private group: Konva.Group;
 
+    /**
+     * @param onStartClick      Called when START GAME is clicked
+     * @param onRiskRewardClick Called when RISK / REWARD is clicked
+     */
     constructor(onStartClick: () => void, onRiskRewardClick: () => void) {
         this.group = new Konva.Group({ visible: true });
         const c = MENU_SCREEN_CONSTANTS;
@@ -66,7 +70,9 @@ export class MenuScreenView implements View {
 
         this.group.add(startButtonGroup);
 
-        // Risk/Reward minigame button, directly below Start
+        // Risk/Reward minigame button, directly below Start.
+        // It reuses the Start button's positions and the whole group is shifted
+        // down by 1.3 button heights, leaving a small gap between the two.
         const rrOffsetY = c.BUTTON_HEIGHT * 1.3;
         const riskRewardGroup = new Konva.Group({ y: rrOffsetY });
         riskRewardGroup.add(new Konva.Rect({
@@ -88,6 +94,7 @@ export class MenuScreenView implements View {
             fill: COLORS.text,
             align: "center",
         });
+        // Center the text on x by shifting it left by half its width
         riskRewardText.offsetX(riskRewardText.width() / 2);
         riskRewardGroup.add(riskRewardText);
         riskRewardGroup.on("click tap", onRiskRewardClick);

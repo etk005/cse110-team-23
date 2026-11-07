@@ -10,7 +10,7 @@ export type Screen =
     | { type: "game", level?: Level }
     | { type: "result"; score: number }
     | { type: "levels" }
-    | { type: "riskReward" }
+    | { type: "riskReward" } // Risk/Reward minigame; starts a fresh game each time
     | { type: "loading"; loader: Loader };
 
 /** 
