@@ -97,7 +97,9 @@ export class GameScreenController extends ScreenController {
     private updateResources(): void {
         this.view.updateResources(
             this.resources.getCoins(),
-            this.resources.getScore()
+            this.resources.getScore(),
+            // what clearing the level would be worth right now
+            levelPoints(true, this.model.getState().strikes)
         );
     }
 
@@ -111,6 +113,9 @@ export class GameScreenController extends ScreenController {
             feedback,
             showNext
         );
+
+        // strikes change the level's points, so refresh the readout too
+        this.updateResources();
     }
 
     getView(): GameScreenView {

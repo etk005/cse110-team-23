@@ -20,6 +20,7 @@ export class GameScreenView implements View {
     // coins and score readout, updated without a full re-render
     private coins = 0;
     private score = 0;
+    private levelPoints = 0;
     private coinsText: Konva.Text | null = null;
     private scoreText: Konva.Text | null = null;
 
@@ -267,17 +268,18 @@ export class GameScreenView implements View {
         this.focusInput();
     }
 
-    /** Shows new coin and score values. */
-    updateResources(coins: number, score: number): void {
+    /** Shows new coin and score values, plus what the current level is worth. */
+    updateResources(coins: number, score: number, levelPoints: number): void {
         this.coins = coins;
         this.score = score;
+        this.levelPoints = levelPoints;
         this.setResourceText();
         this.group.getLayer()?.batchDraw();
     }
 
     private setResourceText(): void {
         this.coinsText?.text(`Coins: ${this.coins}`);
-        this.scoreText?.text(`Score: ${this.score}`);
+        this.scoreText?.text(`Score: ${this.score} (+${this.levelPoints} this level)`);
     }
 
     // ---- HTML text input -------------------------------------------------

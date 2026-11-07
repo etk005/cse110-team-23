@@ -202,16 +202,24 @@ describe("GameScreenController", () => {
         expect(resources.getScore()).toBe(9);
     });
 
-    it("shows the starting coins and score", () => {
-        expect(viewMock.updateResources).toHaveBeenLastCalledWith(10, 0);
+    it("shows the starting coins, score and level points", () => {
+        expect(viewMock.updateResources).toHaveBeenLastCalledWith(10, 0, 10);
     });
 
     it("updates the readout when coins change", () => {
         resources.spendCoins(4);
-        expect(viewMock.updateResources).toHaveBeenLastCalledWith(6, 0);
+        expect(viewMock.updateResources).toHaveBeenLastCalledWith(6, 0, 10);
 
         resources.earnCoins(2);
-        expect(viewMock.updateResources).toHaveBeenLastCalledWith(8, 0);
+        expect(viewMock.updateResources).toHaveBeenLastCalledWith(8, 0, 10);
+    });
+
+    it("lowers the level points shown after each strike", () => {
+        viewMock.onAnswer?.(wrongAnswer());
+        expect(viewMock.updateResources).toHaveBeenLastCalledWith(10, 0, 9);
+
+        viewMock.onAnswer?.(wrongAnswer());
+        expect(viewMock.updateResources).toHaveBeenLastCalledWith(10, 0, 8);
     });
 
     it("resets when starting a new game", () => {

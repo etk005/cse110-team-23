@@ -123,7 +123,7 @@ export const GAME_SCREEN_CONSTANTS = {
     FOOTER_Y: (H * 9) / 10,
 
     STATS_X: (W * 3) / 4,
-    RESOURCES_X: (W * 7) / 12, // coins and score, left of strikes/progress
+    RESOURCES_X: (W * 5) / 12, // coins and score, left of strikes/progress
     STATS_Y_STRIKES: H / 25,
     STATS_Y_PROGRESS: H / 12,
     STATS_FONT_SIZE: H / 34,
