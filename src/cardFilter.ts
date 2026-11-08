@@ -26,3 +26,22 @@ export function getRemainingPossibleCards(
     return knownInformation.every((clue) => matchesClue(card, clue));
   });
 }
+
+// added new function here
+export function updateCardCounts(deck: Array<{ id: string; type: string }>, revealedCardIds: string[]) {
+  const remainingDeck = deck.filter(card => !revealedCardIds.includes(card.id));
+  
+  const riskCount = remainingDeck.filter(card => card.type === 'risk').length;
+  const rewardCount = remainingDeck.filter(card => card.type === 'reward').length;
+  const totalCount = remainingDeck.length;
+
+  const riskElem = document.getElementById('risk-count');
+  const rewardElem = document.getElementById('reward-count');
+  const totalElem = document.getElementById('total-count');
+
+  if (riskElem) riskElem.innerText = riskCount.toString();
+  if (rewardElem) rewardElem.innerText = rewardCount.toString();
+  if (totalElem) totalElem.innerText = totalCount.toString();
+
+  return { riskCount, rewardCount, totalCount };
+}
