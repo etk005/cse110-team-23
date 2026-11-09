@@ -79,8 +79,12 @@ export function parseUserInput(input: string): number | null {
     const parts = trimmed.split('/');
     if (parts.length !== 2) return null;
 
-    const numerator = parseFloat(parts[0]);
-    const denominator = parseFloat(parts[1]);
+    const numStr = parts[0];
+    const denStr = parts[1];
+    if (numStr === undefined || denStr === undefined) return null;
+
+    const numerator = parseFloat(numStr);
+    const denominator = parseFloat(denStr);
 
     if (isNaN(numerator) || isNaN(denominator) || denominator === 0) {
       return null;
@@ -113,3 +117,22 @@ export function getValidatedInputValue(elementId: string): number | null {
 
   return value;
 }
+
+/**
+ * Task #115: Triggers probability and expected value updates 
+ * whenever a card is revealed in the game state.
+ */
+export function handleCardReveal(
+  deck: Array<{ id: string; type: string }>,
+  revealedCardIds: string[],
+  newlyRevealedId: string,
+  riskValue?: number,
+  rewardValue?: number
+) {
+  const updatedRevealedIds = revealedCardIds.includes(newlyRevealedId)
+    ? revealedCardIds
+    : [...revealedCardIds, newlyRevealedId];
+
+  return calculateDynamicExpectedValue(deck, updatedRevealedIds, riskValue, rewardValue);
+}
+
