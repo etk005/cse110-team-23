@@ -115,8 +115,12 @@ export function parseUserInput(input: string | null | undefined): number | null 
     const parts = trimmed.split('/');
     if (parts.length !== 2) return null;
 
-    const numerator = parseFloat(parts[0]);
-    const denominator = parseFloat(parts[1]);
+    const numStr = parts[0];
+    const denStr = parts[1];
+    if (numStr === undefined || denStr === undefined) return null;
+
+    const numerator = parseFloat(numStr);
+    const denominator = parseFloat(denStr);
 
     if (isNaN(numerator) || isNaN(denominator) || denominator === 0) {
       return null;
