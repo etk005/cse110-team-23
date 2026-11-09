@@ -26,3 +26,23 @@ export function getRemainingPossibleCards(
     return knownInformation.every((clue) => matchesClue(card, clue));
   });
 }
+
+/**
+ * Calculates and displays the expected value based on probabilities.
+ */
+export function calculateAndDisplayExpectedValue(riskValue: number = -10, rewardValue: number = 20) {
+  const riskInput = document.getElementById('risk-prob-input') as HTMLInputElement;
+  const rewardInput = document.getElementById('reward-prob-input') as HTMLInputElement;
+  const evDisplay = document.getElementById('expected-value-display');
+
+  if (!riskInput || !rewardInput || !evDisplay) return 0;
+
+  const riskProb = parseFloat(riskInput.value) || 0;
+  const rewardProb = parseFloat(rewardInput.value) || 0;
+
+  // Expected Value formula: (Risk Prob * Risk Value) + (Reward Prob * Reward Value)
+  const expectedValue = (riskProb * riskValue) + (rewardProb * rewardValue);
+  
+  evDisplay.innerText = expectedValue.toFixed(2);
+  return expectedValue;
+}
