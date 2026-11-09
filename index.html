@@ -40,6 +40,18 @@
     </head>
     <body>
         <div id="viewport">
+
+            <div class="probability-calculator-display" style="position: absolute; top: 120px; left: 20px; color: white; background: rgba(0, 0, 0, 0.6); padding: 10px 15px; border-radius: 8px; font-size: 14px;">
+              <h3 style="margin-top: 0;">Probability & Expected Value</h3>
+              <div style="margin-bottom: 5px;">
+                <label>Risk Prob: <input type="number" id="risk-prob-input" step="0.01" min="0" max="1" value="0.5" style="width: 60px;"/></label>
+              </div>
+              <div style="margin-bottom: 5px;">
+                <label>Reward Prob: <input type="number" id="reward-prob-input" step="0.01" min="0" max="1" value="0.5" style="width: 60px;"/></label>
+              </div>
+              <p style="margin-bottom: 0;">Expected Value: <span id="expected-value-display">0.00</span></p>
+            </div>
+            
             <div id="container"></div>
         </div>
         <script type="module" src="/src/main.ts"></script>
