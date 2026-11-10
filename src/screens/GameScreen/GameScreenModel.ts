@@ -3,9 +3,11 @@ import type {
     Card,
     ProbabilityQuestion,
     Level,
+    KnownInformation
 } from "../../shared/types.ts";
 import { getNextInformation } from "../../game/informationEngine.ts";
 import { getRemainingPossibleCards } from "../../cardFilter.ts";
+import { STARTING_CHIPS, COST_OF_CLUE } from "../../constants.ts";
 
 const questions: ProbabilityQuestion[] = [
     {
@@ -53,7 +55,8 @@ export class GameScreenModel {
             "questionsRequired": 0,
             "remainingPossibleCards": [],
             "status": "playing",
-            "strikes": 0
+            "strikes": 0,
+            "chips": STARTING_CHIPS
         };
         this.level = null;
     }
@@ -74,12 +77,15 @@ export class GameScreenModel {
             questionsRequired: level.questionsRequired,
             remainingPossibleCards: level.deck,
             status: "playing",
-            strikes: 0
+            strikes: 0,
+            chips: STARTING_CHIPS
         };
 
         this.revealNextClue(state);
         return state;
     }
+
+    /** Gets the number of chips that the player currently has */
 
     /**
      * Adds the next useful clue about the hidden card (if any) and
@@ -217,4 +223,57 @@ export class GameScreenModel {
         const nextIndex = this.state.questionsAnswered;
         this.state.currentQuestion = questions[nextIndex] ?? null;
     }
+    /**Returns true if this.state.chips >= COST_OF_CLUE */
+    hasEnoughChips(): boolean { 
+        return this.state.chips >= COST_OF_CLUE;
+    }
+    /**Subtracts COST_OF_CLUE from this.state.chips */
+    subtractChips(): void{
+        this.state.chips -= COST_OF_CLUE;
+    }
+    /**Adds COST_OF_CLUE to this.state.chips */
+    addChips(amount: number): void{
+        this.state.chips += COST_OF_CLUE;
+    }
+    /**Returns the number of chips that the player currently has */
+    getChips(): number{
+        return this.state.chips;
+    }
+    /**Request Clue */
+    private requestClue(): KnownInformation | null{
+        if(this.hiddenCard == null){
+            return null;
+        }
+        return getNextInformation(
+            this.hiddenCard,
+            this.state.remainingPossibleCards,
+            this.state.knownInformation
+        )
+        
+    }
+    /**Function to add clue to known information */
+    private addClue(clue: KnownInformation): void{
+        this.state.knownInformation.push(clue);
+        this.state.remainingPossibleCards = getRemainingPossibleCards(
+            this.state.deck, 
+            this.state.knownInformation
+        );
+
+
+    }
+    /**Function to buy the information of the chips */
+    buyInformation(): "bought" | "not enough chips" | "no_clues_left" {
+        if(!this.hasEnoughChips()){
+            return "not enough chips";
+        }
+        const clue = this.requestClue();
+        if(clue == null){
+            return "no_clues_left";
+        }
+        this.subtractChips();
+        this.addClue(clue);
+        return "bought";
+    }
+
+    
 }

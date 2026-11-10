@@ -56,4 +56,7 @@ export interface GameState {
 
   // cards that still match all known clues
   remainingPossibleCards: Card[];
+  
+  // number of chips the player has
+  chips: number;
 }

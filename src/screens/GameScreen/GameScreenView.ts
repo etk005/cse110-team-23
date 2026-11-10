@@ -16,6 +16,7 @@ export class GameScreenView implements View {
     private onAnswer: (answer: string) => void;
     private onMenu: () => void;
     private onNext: () => void;
+    private onBuyInfo: () => void;
 
     // HTML text input drawn on top of the canvas (created on first use)
     private overlay: HTMLDivElement | null = null;
@@ -31,12 +32,14 @@ export class GameScreenView implements View {
     constructor(
         onAnswer: (answer: string) => void,
         onMenu: () => void,
-        onNext: () => void
+        onNext: () => void,
+        onBuyInfo: () => void,
     ) {
         this.group = new Konva.Group({ visible: false });
         this.onAnswer = onAnswer;
         this.onMenu = onMenu;
         this.onNext = onNext;
+        this.onBuyInfo = onBuyInfo;
     }
 
     render(

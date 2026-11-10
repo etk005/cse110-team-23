@@ -21,7 +21,8 @@ export class GameScreenController extends ScreenController {
         this.view = new GameScreenView(
             (answer) => this.handleAnswer(answer),
             () => this.screenSwitcher.switchToScreen({ type: "menu" }),
-            () => this.handleNext()
+            () => this.handleNext(),
+            () => this.handleBuyInfo()
         );
     }
 

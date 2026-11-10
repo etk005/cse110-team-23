@@ -188,3 +188,7 @@ export const COLORS = {
     accent: "#f1c653",
     border: "#fffdf4",
 };
+
+export const STARTING_CHIPS = 10; // number of chips the player starts with
+
+export const COST_OF_CLUE = 3; // number of chips each clue costs
