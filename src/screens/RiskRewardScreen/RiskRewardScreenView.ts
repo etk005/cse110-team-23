@@ -10,7 +10,7 @@ export interface RiskRewardStats {
     cardCount: number;   // total cards in the deck (one grid slot each)
     riskCount: number;   // Risk cards remaining
     rewardCount: number; // Reward cards remaining
-    chips: number;       // temporary minigame coins
+    chips: number;       // temporary minigame chips (separate from main coins)
 }
 
 /**
@@ -85,7 +85,7 @@ export class RiskRewardScreenView implements View {
             ["CARDS REMAINING", stats.cardCount],
             ["RISK REMAINING", stats.riskCount],
             ["REWARD REMAINING", stats.rewardCount],
-            ["CURRENT MINIGAME COINS", stats.chips],
+            ["CURRENT MINIGAME CHIPS", stats.chips],
         ];
         // Box width is whatever fits STATS_COLUMNS boxes (plus gaps) inside
         // the panel's padding; panel height grows with the number of rows.
