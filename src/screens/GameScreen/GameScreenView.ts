@@ -185,6 +185,20 @@ export class GameScreenView implements View {
                 submitWidth,
                 () => this.submitInput()
             );
+            this.addText(
+                `Chips: ${state.chips}`,
+                layout.RIGHT_COLUMN_X + pad,
+                layout.GUESS_PANEL_Y + layout.PANEL_BODY_Y,
+                layout.PANEL_BODY_FONT_SIZE,
+                layout.PANEL_TEXT
+            );
+            this.addButton(
+                "Buy Clue",
+                layout.RIGHT_COLUMN_X + pad,
+                layout.GUESS_PANEL_Y + layout.PANEL_ROW_Y,
+                layout.MENU_BUTTON_WIDTH,
+                () => this.onBuyInfo()
+            );
         }
 
         // Feedback message: beside Submit, or where the input was
@@ -248,6 +262,7 @@ export class GameScreenView implements View {
         this.updateInput();
         this.focusInput();
     }
+   
 
     // ---- HTML text input -------------------------------------------------
     // Konva can't draw a text box you can type in, so the input is a real
