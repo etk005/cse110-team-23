@@ -24,7 +24,8 @@ export class RiskRewardScreenView implements View {
     // Holds the stats panel and cards; cleared and redrawn on every render()
     private content: Konva.Group;
 
-    constructor() {
+    /** @param onMenuClick Called when the Main Menu button is clicked */
+    constructor(onMenuClick: () => void) {
         this.group = new Konva.Group({ visible: false });
 
         // Full-screen background
@@ -37,8 +38,49 @@ export class RiskRewardScreenView implements View {
         // The title never changes, so it's drawn once here instead of in render()
         this.group.add(this.createTitle());
 
+        // Lets the player leave the minigame (also static, so drawn once)
+        this.group.add(this.createMenuButton(onMenuClick));
+
         this.content = new Konva.Group();
         this.group.add(this.content);
+    }
+
+    /** "Menu" button in the bottom-right corner. */
+    private createMenuButton(onClick: () => void): Konva.Group {
+        const button = new Konva.Group({
+            x: STAGE_WIDTH - c.MENU_BUTTON_MARGIN - c.MENU_BUTTON_WIDTH,
+            y: STAGE_HEIGHT - c.MENU_BUTTON_MARGIN - c.MENU_BUTTON_HEIGHT,
+        });
+        // Same red style as the Menu button on the main game screen
+        button.add(new Konva.Rect({
+            width: c.MENU_BUTTON_WIDTH,
+            height: c.MENU_BUTTON_HEIGHT,
+            fill: COLORS.button,
+            stroke: COLORS.buttonDark,
+            strokeWidth: c.MENU_BUTTON_STROKE,
+            cornerRadius: c.MENU_BUTTON_RADIUS,
+        }));
+        button.add(new Konva.Text({
+            width: c.MENU_BUTTON_WIDTH,
+            height: c.MENU_BUTTON_HEIGHT,
+            text: "Menu",
+            fontSize: c.MENU_BUTTON_FONT_SIZE,
+            fill: COLORS.text,
+            align: "center",
+            verticalAlign: "middle",
+        }));
+
+        button.on("click tap", onClick);
+        // Show a pointer cursor on hover so it reads as clickable
+        button.on("mouseenter", () => {
+            const stage = button.getStage();
+            if (stage) stage.container().style.cursor = "pointer";
+        });
+        button.on("mouseleave", () => {
+            const stage = button.getStage();
+            if (stage) stage.container().style.cursor = "default";
+        });
+        return button;
     }
 
     /** "Risk" in red, "/" in gold, "Reward" in green, centered on the screen. */

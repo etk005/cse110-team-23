@@ -216,6 +216,14 @@ export const RISK_REWARD_SCREEN_CONSTANTS = {
     CARD_FONT_SIZE: H / 32, // size of the "R/R" label
     GRID_PADDING: W / 60, // space between the panel edge and the cards
 
+    // Menu button (bottom-right corner). Sizes match the game screen's Menu button.
+    MENU_BUTTON_WIDTH: GAME_SCREEN_CONSTANTS.MENU_BUTTON_WIDTH,
+    MENU_BUTTON_HEIGHT: GAME_SCREEN_CONSTANTS.BUTTON_HEIGHT,
+    MENU_BUTTON_FONT_SIZE: GAME_SCREEN_CONSTANTS.BUTTON_FONT_SIZE,
+    MENU_BUTTON_RADIUS: GAME_SCREEN_CONSTANTS.BUTTON_RADIUS,
+    MENU_BUTTON_STROKE: GAME_SCREEN_CONSTANTS.BUTTON_STROKE,
+    MENU_BUTTON_MARGIN: W / 40, // distance from the right and bottom edges
+
     // Colors
     CARD_FILL: "#fffdf4", // cream, also used for stat boxes
     CARD_STROKE: "#d9cfae", // tan border on cards and stat boxes

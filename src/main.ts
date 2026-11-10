@@ -42,8 +42,7 @@ class App implements ScreenSwitcher {
         this.resultsController = new ResultsScreenController(this);
         this.levelsController = new LevelsScreenController(this);
         this.loadingController = new LoadingScreenController(this);
-        // No screenSwitcher passed: the minigame has no navigation buttons yet
-        this.riskRewardController = new RiskRewardScreenController();
+        this.riskRewardController = new RiskRewardScreenController(this);
 
         // Add all screen views to the same layer
         this.layer.add(this.menuController.getView().getGroup());
