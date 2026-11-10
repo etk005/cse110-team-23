@@ -179,6 +179,58 @@ export const RESULTS_SCREEN_CONSTANTS = {
     BUTTON_FONT_SIZE: H / 33,
 };
 
+// Left column holds the title, stats panel and card grid (right side is left free)
+const RR_LEFT_X = W / 36;
+const RR_LEFT_WIDTH = W * 0.57;
+
+/**
+ * Layout and colors for the Risk/Reward minigame screen.
+ * Card and stat-box widths aren't listed here: the view works them out so
+ * the columns fill LEFT_WIDTH exactly.
+ */
+export const RISK_REWARD_SCREEN_CONSTANTS = {
+    // Left column position and width (shared by both panels)
+    LEFT_X: RR_LEFT_X,
+    LEFT_WIDTH: RR_LEFT_WIDTH,
+
+    // "Risk/Reward" title (centered horizontally on the screen)
+    TITLE_Y: H / 40, // smaller = higher
+    TITLE_FONT_SIZE: H / 11,
+
+    // Stats panel. Its top edge sets where the whole column starts;
+    // the card grid is placed below it automatically.
+    STATS_PANEL_Y: H / 7, // smaller = panels move up
+    STATS_COLUMNS: 3, // boxes per row
+    STAT_HEIGHT: H / 15,
+    STAT_GAP: W / 150, // space between boxes
+    STAT_PADDING: H / 90, // text inset inside each box
+    STAT_LABEL_FONT_SIZE: H / 75,
+    STAT_VALUE_FONT_SIZE: H / 38,
+    PANEL_PADDING: W / 120, // space between the panel edge and the boxes
+
+    // Card grid panel
+    GRID_PANEL_GAP: H / 45, // space between the stats panel and the grid
+    GRID_COLUMNS: 7, // cards per row (21 cards -> 3 rows)
+    CARD_HEIGHT: H / 6.2,
+    CARD_GAP: W / 110, // space between cards
+    CARD_FONT_SIZE: H / 32, // size of the "R/R" label
+    GRID_PADDING: W / 60, // space between the panel edge and the cards
+
+    // Colors
+    CARD_FILL: "#fffdf4", // cream, also used for stat boxes
+    CARD_STROKE: "#d9cfae", // tan border on cards and stat boxes
+    PANEL_FILL: "#2c5a34", // stats panel background
+    GRID_FILL: "#183a1f", // darker card grid background
+    PANEL_STROKE: "#c9a646", // gold panel border
+    RISK_COLOR: "#b62335", // red: "Risk" in the title, "R/" on cards, stat labels
+    REWARD_COLOR: "#3f8a2f", // green second "R" on cards
+    TITLE_REWARD_COLOR: "#7ee08a", // lighter green so "Reward" shows up on the dark background
+
+    // Corner rounding
+    RADIUS: H / 75, // cards and stat boxes
+    PANEL_RADIUS: H / 50, // the two panels
+};
+
 export const COLORS = {
     background: "#07451c",
     panel: "#b62335",
