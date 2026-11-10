@@ -35,6 +35,7 @@ export class GameScreenModel {
     private waitingForNext = false;
     private level: Level | null;
     private hiddenCard: Card | null = null;
+    private chips = STARTING_CHIPS;
 
     /**
      * @param random source of randomness for picking the hidden card;
@@ -56,7 +57,7 @@ export class GameScreenModel {
             "remainingPossibleCards": [],
             "status": "playing",
             "strikes": 0,
-            "chips": STARTING_CHIPS
+            "chips": this.chips
         };
         this.level = null;
     }
@@ -78,7 +79,7 @@ export class GameScreenModel {
             remainingPossibleCards: level.deck,
             status: "playing",
             strikes: 0,
-            chips: STARTING_CHIPS
+            chips: this.chips
         };
 
         this.revealNextClue(state);
@@ -225,19 +226,19 @@ export class GameScreenModel {
     }
     /**Returns true if this.state.chips >= COST_OF_CLUE */
     hasEnoughChips(): boolean { 
-        return this.state.chips >= COST_OF_CLUE;
+        return this.chips >= COST_OF_CLUE;
     }
     /**Subtracts COST_OF_CLUE from this.state.chips */
     subtractChips(): void{
-        this.state.chips -= COST_OF_CLUE;
+        this.chips -= COST_OF_CLUE;
     }
     /**Adds COST_OF_CLUE to this.state.chips */
     addChips(amount: number): void{
-        this.state.chips += COST_OF_CLUE;
+        this.chips += COST_OF_CLUE;
     }
     /**Returns the number of chips that the player currently has */
     getChips(): number{
-        return this.state.chips;
+        return this.chips;
     }
     /**Request Clue */
     private requestClue(): KnownInformation | null{
