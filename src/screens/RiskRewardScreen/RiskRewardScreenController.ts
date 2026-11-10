@@ -1,4 +1,5 @@
 import { ScreenController } from "../../types.ts";
+import type { ScreenSwitcher } from "../../types.ts";
 import { RiskRewardScreenModel } from "./RiskRewardScreenModel.ts";
 import { RiskRewardScreenView } from "./RiskRewardScreenView.ts";
 
@@ -10,10 +11,13 @@ export class RiskRewardScreenController extends ScreenController {
     private model: RiskRewardScreenModel;
     private view: RiskRewardScreenView;
 
-    constructor() {
+    /** @param screenSwitcher Used by the Main Menu button to leave the minigame */
+    constructor(screenSwitcher: ScreenSwitcher) {
         super();
         this.model = new RiskRewardScreenModel();
-        this.view = new RiskRewardScreenView();
+        this.view = new RiskRewardScreenView(
+            () => screenSwitcher.switchToScreen({ type: "menu" })
+        );
     }
 
     /**

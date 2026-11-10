@@ -5,7 +5,11 @@ import { STAGE_WIDTH, COLORS, MENU_SCREEN_CONSTANTS } from "../../constants.ts";
 export class MenuScreenView implements View {
     private group: Konva.Group;
 
-    constructor(onStartClick: () => void) {
+    /**
+     * @param onStartClick      Called when START GAME is clicked
+     * @param onRiskRewardClick Called when RISK / REWARD is clicked
+     */
+    constructor(onStartClick: () => void, onRiskRewardClick: () => void) {
         this.group = new Konva.Group({ visible: true });
         const c = MENU_SCREEN_CONSTANTS;
 
@@ -65,6 +69,36 @@ export class MenuScreenView implements View {
         startButtonGroup.on("click tap", onStartClick);
 
         this.group.add(startButtonGroup);
+
+        // Risk/Reward minigame button, directly below Start.
+        // It reuses the Start button's positions and the whole group is shifted
+        // down by 1.3 button heights, leaving a small gap between the two.
+        const rrOffsetY = c.BUTTON_HEIGHT * 1.3;
+        const riskRewardGroup = new Konva.Group({ y: rrOffsetY });
+        riskRewardGroup.add(new Konva.Rect({
+            x: (STAGE_WIDTH - c.BUTTON_WIDTH) / 2,
+            y: c.BUTTON_Y,
+            width: c.BUTTON_WIDTH,
+            height: c.BUTTON_HEIGHT,
+            fill: COLORS.button,
+            cornerRadius: c.BUTTON_RADIUS,
+            stroke: COLORS.buttonDark,
+            strokeWidth: c.BUTTON_STROKE,
+        }));
+        const riskRewardText = new Konva.Text({
+            x: STAGE_WIDTH / 2,
+            y: c.BUTTON_TEXT_Y,
+            text: "RISK / REWARD",
+            fontSize: c.BUTTON_FONT_SIZE,
+            fontFamily: "Arial",
+            fill: COLORS.text,
+            align: "center",
+        });
+        // Center the text on x by shifting it left by half its width
+        riskRewardText.offsetX(riskRewardText.width() / 2);
+        riskRewardGroup.add(riskRewardText);
+        riskRewardGroup.on("click tap", onRiskRewardClick);
+        this.group.add(riskRewardGroup);
     }
 
     show(): void {
