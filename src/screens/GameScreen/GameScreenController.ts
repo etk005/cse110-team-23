@@ -71,6 +71,26 @@ export class GameScreenController extends ScreenController {
         this.model.nextQuestion();
         this.updateView();
     }
+    private handleBuyInfo(): void{
+        const result = this.model.buyInformation();
+        let message = this.getBuyInfoMessage(result);
+        this.updateView(message);
+    
+    }
+    private getBuyInfoMessage(result: string): string{
+        switch (result){
+            case "bought":
+                return "Clue bought!";
+            case "not enough chips":
+                return "Not enough chips!";
+            case "no_clues_left":
+                return "No more clues left.";
+            default:
+                return "Unknown error.";
+        }
+
+    }
+    
 
     private showResults(): void {
         this.screenSwitcher.switchToScreen({
