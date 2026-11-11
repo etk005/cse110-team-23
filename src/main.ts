@@ -7,6 +7,7 @@ import { ResultsScreenController } from "./screens/ResultsScreen/ResultsScreenCo
 import { STAGE_WIDTH, STAGE_HEIGHT } from "./constants.ts";
 import { LevelsScreenController } from "./screens/LevelsScreen/LevelsScreenController.ts";
 import { LoadingScreenController } from "./screens/LoadingScreen/LoadingScreenController.ts";
+import { PlayerResources } from "./game/playerResources.ts";
 import { RiskRewardScreenController } from "./screens/RiskRewardScreen/RiskRewardScreenController.ts";
 
 // Main application class that manages the screens and navigation
@@ -36,10 +37,13 @@ class App implements ScreenSwitcher {
         this.layer = new Konva.Layer();
         this.stage.add(this.layer);
 
+        // One set of coins and score, shared by every screen that shows them
+        const resources = new PlayerResources();
+
         // Initialize the screen controllers
         this.menuController = new MenuScreenController(this);
-        this.gameController = new GameScreenController(this);
-        this.resultsController = new ResultsScreenController(this);
+        this.gameController = new GameScreenController(this, resources);
+        this.resultsController = new ResultsScreenController(this, resources);
         this.levelsController = new LevelsScreenController(this);
         this.loadingController = new LoadingScreenController(this);
         this.riskRewardController = new RiskRewardScreenController(this);
@@ -101,7 +105,7 @@ class App implements ScreenSwitcher {
                 break;
 
             case "result":
-                this.resultsController.showResults(screen.score);
+                this.resultsController.showResults(screen.won, screen.points);
                 break;
 
             case "levels":

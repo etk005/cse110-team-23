@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Screen, ScreenSwitcher } from "../types.ts";
 import type { Level } from "../shared/types.ts";
 import { GameScreenModel } from "../screens/GameScreen/GameScreenModel.ts";
+import { PlayerResources } from "../game/playerResources.ts";
 
 const level1: Level = {
     id: 1,
@@ -25,6 +26,7 @@ const viewMock = vi.hoisted(() => ({
     onMenu: undefined as (() => void) | undefined,
     onNext: undefined as (() => void) | undefined,
     render: vi.fn(),
+    updateResources: vi.fn(),
     show: vi.fn(),
     hide: vi.fn(),
 }));
@@ -42,6 +44,7 @@ vi.mock("../screens/GameScreen/GameScreenView.ts", () => ({
         }
 
         render = viewMock.render;
+        updateResources = viewMock.updateResources;
         show = viewMock.show;
         hide = viewMock.hide;
     },
@@ -52,6 +55,7 @@ import { GameScreenController } from "../screens/GameScreen/GameScreenController
 describe("GameScreenController", () => {
     let controller: GameScreenController;
     let switchToScreen: ReturnType<typeof vi.fn<(screen: Screen) => void>>;
+    let resources: PlayerResources;
 
     function currentState() {
         return viewMock.render.mock.lastCall?.[0];
@@ -84,7 +88,8 @@ describe("GameScreenController", () => {
             switchToScreen,
         };
 
-        controller = new GameScreenController(screenSwitcher);
+        resources = new PlayerResources(10);
+        controller = new GameScreenController(screenSwitcher, resources);
         controller.setLevel(level1);
         controller.startGame();
     });
@@ -160,8 +165,47 @@ describe("GameScreenController", () => {
 
         expect(switchToScreen).toHaveBeenCalledWith({
             type: "result",
-            score: 0,
+            won: false,
+            points: 0,
         });
+        expect(resources.getScore()).toBe(0);
+    });
+
+    it("records points and opens results when the level is won", () => {
+        // one strike first, so the level is worth 10 - 1
+        viewMock.onAnswer?.(wrongAnswer());
+
+        while (currentState().status === "playing") {
+            viewMock.onAnswer?.(correctAnswer());
+            viewMock.onNext?.();
+        }
+
+        expect(switchToScreen).toHaveBeenCalledWith({
+            type: "result",
+            won: true,
+            points: 9,
+        });
+        expect(resources.getScore()).toBe(9);
+    });
+
+    it("shows the starting coins, score and level points", () => {
+        expect(viewMock.updateResources).toHaveBeenLastCalledWith(10, 0, 10);
+    });
+
+    it("updates the readout when coins change", () => {
+        resources.spendCoins(4);
+        expect(viewMock.updateResources).toHaveBeenLastCalledWith(6, 0, 10);
+
+        resources.earnCoins(2);
+        expect(viewMock.updateResources).toHaveBeenLastCalledWith(8, 0, 10);
+    });
+
+    it("lowers the level points shown after each strike", () => {
+        viewMock.onAnswer?.(wrongAnswer());
+        expect(viewMock.updateResources).toHaveBeenLastCalledWith(10, 0, 9);
+
+        viewMock.onAnswer?.(wrongAnswer());
+        expect(viewMock.updateResources).toHaveBeenLastCalledWith(10, 0, 8);
     });
 
     it("resets when starting a new game", () => {
