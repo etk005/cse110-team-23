@@ -138,7 +138,7 @@ export class RiskRewardScreenController extends ScreenController {
                 "success"
             );
         } else {
-            this.setMessage("Risk! Game over.", "error");
+            this.setMessage("Risk! You lost all your minigame chips. Game over.", "error");
         }
         this.refresh();
     }

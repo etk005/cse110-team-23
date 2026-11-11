@@ -522,8 +522,8 @@ export class RiskRewardScreenView implements View {
 
     /**
      * Bottom of the calculations panel: Submit while calculating, then a status
-     * message, then Cash Out / Continue after a Reward, or Back to Menu after
-     * cashing out.
+     * message, then Cash Out / Continue after a Reward or Back to Menu once
+     * the game is over.
      */
     private renderActions(stats: RiskRewardViewState): void {
         this.calcActions.destroyChildren();
@@ -565,7 +565,7 @@ export class RiskRewardScreenView implements View {
                     this.createActionButton("Continue", half + c.CALC_BUTTON_GAP, y, half, "secondary", this.handlers.onContinue)
                 );
             }
-        } else if (stats.phase === "cashedOut") {
+        } else if (stats.phase === "lost" || stats.phase === "cashedOut") {
             this.calcActions.add(this.createActionButton("Back to Menu", 0, y, width, "primary", this.handlers.onMenu));
         }
     }
