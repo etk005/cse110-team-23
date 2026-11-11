@@ -59,4 +59,13 @@ export interface GameState {
   
   // number of chips the player has
   chips: number;
+
+  // paid hint: player clicked Buy Clue and is picking a type
+  choosingHint: boolean;
+  // paid hint: remaining-card tray is unlocked for the rest of the level
+  canViewRemainingCards: boolean;
+  // paid hint: band around the current question's true probability
+  probabilityRange: { low: number; high: number } | null;
 }
+
+export type HintKind = "cards" | "range";
