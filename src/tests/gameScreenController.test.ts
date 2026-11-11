@@ -62,7 +62,6 @@ describe("GameScreenController", () => {
     }
 
     function correctAnswer(): string {
-        const options = viewMock.render.mock.lastCall?.[1] as string[];
         const state = currentState();
 
         const testModel = new GameScreenModel();
@@ -72,20 +71,7 @@ describe("GameScreenController", () => {
         testState.remainingPossibleCards = state.remainingPossibleCards;
         testState.currentQuestion = state.currentQuestion;
 
-        const expected = testModel.getCorrectAnswer();
-
-        const matchingOption = options.find((option) => {
-            const parts = option.split("/");
-            const value = parts.length === 2
-                ? Number(parts[0]) / Number(parts[1])
-                : Number(option);
-
-            return value === expected;
-        });
-
-        expect(matchingOption).toBeDefined();
-
-        return matchingOption!;
+        return String(testModel.getCorrectAnswer());
     }
 
     function wrongAnswer(): string {

@@ -8,6 +8,7 @@ import { STAGE_WIDTH, STAGE_HEIGHT } from "./constants.ts";
 import { LevelsScreenController } from "./screens/LevelsScreen/LevelsScreenController.ts";
 import { LoadingScreenController } from "./screens/LoadingScreen/LoadingScreenController.ts";
 import { PlayerResources } from "./game/playerResources.ts";
+import { RiskRewardScreenController } from "./screens/RiskRewardScreen/RiskRewardScreenController.ts";
 
 // Main application class that manages the screens and navigation
 class App implements ScreenSwitcher {
@@ -19,6 +20,7 @@ class App implements ScreenSwitcher {
     private resultsController: ResultsScreenController;
     private levelsController: LevelsScreenController;
     private loadingController: LoadingScreenController;
+    private riskRewardController: RiskRewardScreenController;
 
     constructor(container: string) {
         // Draw at the screen's real pixel density so it's sharp on retina displays
@@ -44,6 +46,7 @@ class App implements ScreenSwitcher {
         this.resultsController = new ResultsScreenController(this, resources);
         this.levelsController = new LevelsScreenController(this);
         this.loadingController = new LoadingScreenController(this);
+        this.riskRewardController = new RiskRewardScreenController(this);
 
         // Add all screen views to the same layer
         this.layer.add(this.menuController.getView().getGroup());
@@ -51,6 +54,7 @@ class App implements ScreenSwitcher {
         this.layer.add(this.resultsController.getView().getGroup());
         this.layer.add(this.levelsController.getView().getGroup());
         this.layer.add(this.loadingController.getView().getGroup());
+        this.layer.add(this.riskRewardController.getView().getGroup());
 
         window.addEventListener("resize", () => this.fitStageToViewport());
 
@@ -86,6 +90,7 @@ class App implements ScreenSwitcher {
         this.resultsController.hide();
         this.levelsController.hide();
         this.loadingController.hide();
+        this.riskRewardController.hide();
 
         switch (screen.type) {
             case "menu":
@@ -109,6 +114,11 @@ class App implements ScreenSwitcher {
                 } else {
                     this.levelsController.load();
                 }
+                break;
+
+            case "riskReward":
+                // startGame() builds a new shuffled deck, draws it, and shows the screen
+                this.riskRewardController.startGame();
                 break;
 
             case "loading":

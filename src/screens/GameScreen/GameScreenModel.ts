@@ -1,29 +1,15 @@
 import type {
     GameState,
     Card,
-    ProbabilityQuestion,
     Level,
 } from "../../shared/types.ts";
 import { getNextInformation } from "../../game/informationEngine.ts";
+import { generateQuestion, probabilityOf } from "../../game/questionGenerator.ts";
 import { getRemainingPossibleCards } from "../../cardFilter.ts";
 
-const questions: ProbabilityQuestion[] = [
-    {
-        id: "question-1",
-        text: "What is the probability that the hidden card is an Ace?",
-        answerType: "fraction",
-    },
-    {
-        id: "question-2",
-        text: "What is the probability that the hidden card is a spade?",
-        answerType: "fraction",
-    },
-    {
-        id: "question-3",
-        text: "What is the probability that the hidden card is red?",
-        answerType: "fraction",
-    },
-];
+// how far a typed answer can be from the exact probability and still count,
+// so a decimal rounded to 2 places (like 0.33 for 1/3) is accepted
+const ANSWER_TOLERANCE = 0.005;
 
 /**
  * Manages game state for an active level.
@@ -33,6 +19,8 @@ export class GameScreenModel {
     private waitingForNext = false;
     private level: Level | null;
     private hiddenCard: Card | null = null;
+    // ids of questions already asked this level, so none repeat
+    private askedQuestionIds = new Set<string>();
 
     /**
      * @param random source of randomness for picking the hidden card;
@@ -61,9 +49,10 @@ export class GameScreenModel {
     private initGameStateFromLevel(level: Level): GameState {
         const index = Math.floor(this.random() * level.deck.length);
         this.hiddenCard = level.deck[index] ?? null;
+        this.askedQuestionIds.clear();
 
         const state: GameState = {
-            currentQuestion: questions[0] ?? null,
+            currentQuestion: null,
             deck: level.deck,
             gameId: crypto.randomUUID(),
             hiddenCard: { isRevealed: false },
@@ -78,7 +67,24 @@ export class GameScreenModel {
         };
 
         this.revealNextClue(state);
+        this.askNextQuestion(state);
         return state;
+    }
+
+    /** Picks a new question about the cards that are still possible. */
+    private askNextQuestion(state: GameState): void {
+        const question = generateQuestion(
+            state.deck,
+            state.remainingPossibleCards,
+            this.askedQuestionIds,
+            this.random
+        );
+
+        if (question !== null) {
+            this.askedQuestionIds.add(question.id);
+        }
+
+        state.currentQuestion = question;
     }
 
     /**
@@ -137,36 +143,15 @@ export class GameScreenModel {
         return this.waitingForNext;
     }
 
-    private matchesQuestion(card: Card, questionId: string): boolean {
-        switch (questionId) {
-            case "question-1":
-                return card.rank === "A";
-
-            case "question-2":
-                return card.suit === "spades";
-
-            case "question-3":
-                return card.suit === "hearts" || card.suit === "diamonds";
-
-            default:
-                return false;
-        }
-    }
-
     /** Returns the probability (0–1) that the hidden card satisfies the current question. */
     getCorrectAnswer(): number {
         const question = this.state.currentQuestion;
-        const cards = this.state.remainingPossibleCards;
 
-        if (!question || cards.length === 0) {
+        if (!question) {
             return 0;
         }
 
-        const matchingCards = cards.filter((card) =>
-            this.matchesQuestion(card, question.id)
-        );
-
-        return matchingCards.length / cards.length;
+        return probabilityOf(question, this.state.remainingPossibleCards);
     }
 
     /**
@@ -185,7 +170,8 @@ export class GameScreenModel {
             ? Number(parts[0]) / Number(parts[1])
             : Number(answer);
 
-        const correct = numericAnswer === this.getCorrectAnswer();
+        const correct =
+            Math.abs(numericAnswer - this.getCorrectAnswer()) <= ANSWER_TOLERANCE;
 
         if (correct) {
             this.state.questionsAnswered++;
@@ -213,8 +199,6 @@ export class GameScreenModel {
 
         this.waitingForNext = false;
         this.revealNextClue(this.state);
-
-        const nextIndex = this.state.questionsAnswered;
-        this.state.currentQuestion = questions[nextIndex] ?? null;
+        this.askNextQuestion(this.state);
     }
 }
