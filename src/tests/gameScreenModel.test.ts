@@ -341,7 +341,7 @@ describe("GameScreenModel", () => {
             expect(model.getState().chips).toBe(STARTING_CHIPS + 10);
         });
         it("does not add negative chips", ()=>{
-            expect(model.addChips(-10)).toThrow("Cannot add negative chips");
+            expect(() => model.addChips(-10)).toThrow("Cannot add negative chips");
             expect(model.getChips()).toBe(STARTING_CHIPS);
             expect(model.getState().chips).toBe(STARTING_CHIPS);
         })
@@ -352,10 +352,15 @@ describe("GameScreenModel", () => {
             expect(model.getChips()).toBe(STARTING_CHIPS - COST_OF_CLUE);
             expect(model.getState().chips).toBe(STARTING_CHIPS - COST_OF_CLUE);
         });
-        it("does not subtract negative chips", ()=>{
-            expect(model.subtractChips()).toThrow("Cannot subtract negative chips");
-            expect(model.getChips()).toBe(STARTING_CHIPS);
-            expect(model.getState().chips).toBe(STARTING_CHIPS);
+        it("does not subtract chips when the balance is below the clue cost", ()=>{
+            while (model.getChips() >= COST_OF_CLUE) {
+                model.subtractChips();
+            }
+            const remainingChips = model.getChips();
+
+            expect(() => model.subtractChips()).toThrow("Cannot subtract negative chips");
+            expect(model.getChips()).toBe(remainingChips);
+            expect(model.getState().chips).toBe(remainingChips);
         })
     });
 
