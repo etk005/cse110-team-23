@@ -101,7 +101,7 @@ export function parseUserInput(input: string): number | null {
  */
 export function getValidatedInputValue(elementId: string): number | null {
   const inputElement = document.getElementById(elementId) as HTMLInputElement;
-  if (!inputElement || !inputElement.value) return null;
+  if (!inputElement) return null;
 
   const value = parseUserInput(inputElement.value);
   
