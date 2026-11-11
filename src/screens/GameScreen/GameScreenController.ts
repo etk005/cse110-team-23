@@ -1,4 +1,4 @@
-import type { GameState, Level } from "../../shared/types.ts";
+import type { HintKind, Level } from "../../shared/types.ts";
 import { ScreenController } from "../../types.ts";
 import type { ScreenSwitcher } from "../../types.ts";
 import { GameScreenModel } from "./GameScreenModel.ts";
@@ -21,7 +21,9 @@ export class GameScreenController extends ScreenController {
         this.view = new GameScreenView(
             (answer) => this.handleAnswer(answer),
             () => this.screenSwitcher.switchToScreen({ type: "menu" }),
-            () => this.handleNext()
+            () => this.handleNext(),
+            () => this.handleBuyInfo(),
+            (kind) => this.handleChooseHint(kind)
         );
     }
 
@@ -70,6 +72,37 @@ export class GameScreenController extends ScreenController {
         this.model.nextQuestion();
         this.updateView();
     }
+    private handleBuyInfo(): void {
+        const result = this.model.openHintMenu();
+        this.updateView(this.getBuyInfoMessage(result));
+    }
+
+    private handleChooseHint(kind: HintKind): void {
+        const result = this.model.buyHint(kind);
+        this.updateView(this.getBuyInfoMessage(result));
+
+        if (result === "bought" && kind === "cards") {
+            this.view.showRemainingCards(
+                this.model.getState().remainingPossibleCards
+            );
+        }
+    }
+
+    private getBuyInfoMessage(result: string): string {
+        switch (result) {
+            case "opened":
+                return "Choose a hint.";
+            case "bought":
+                return "Clue bought!";
+            case "not enough chips":
+                return "Not enough chips!";
+            case "already_bought":
+                return "You already bought that hint.";
+            default:
+                return "";
+        }
+    }
+    
 
     private showResults(): void {
         this.screenSwitcher.switchToScreen({

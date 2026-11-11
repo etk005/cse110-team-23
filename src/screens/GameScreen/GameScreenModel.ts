@@ -3,9 +3,11 @@ import type {
     Card,
     ProbabilityQuestion,
     Level,
+    HintKind
 } from "../../shared/types.ts";
-import { getNextInformation } from "../../game/informationEngine.ts";
 import { getRemainingPossibleCards } from "../../cardFilter.ts";
+import { getNextInformation } from "../../game/informationEngine.ts";
+import { STARTING_CHIPS, COST_OF_CLUE } from "../../constants.ts";
 
 const questions: ProbabilityQuestion[] = [
     {
@@ -33,11 +35,9 @@ export class GameScreenModel {
     private waitingForNext = false;
     private level: Level | null;
     private hiddenCard: Card | null = null;
+    private chips = STARTING_CHIPS;
 
-    /**
-     * @param random source of randomness for picking the hidden card;
-     * tests can pass a fixed function to make games deterministic.
-     */
+    /** Accepts a random source so hidden-card selection can be tested deterministically. */
     constructor(private random: () => number = Math.random) {
         // nil value for now
         // TODO: make game screen properly handle before init
@@ -53,7 +53,11 @@ export class GameScreenModel {
             "questionsRequired": 0,
             "remainingPossibleCards": [],
             "status": "playing",
-            "strikes": 0
+            "strikes": 0,
+            "chips": this.chips,
+            "choosingHint": false,
+            "canViewRemainingCards": false,
+            "probabilityRange": null
         };
         this.level = null;
     }
@@ -74,17 +78,18 @@ export class GameScreenModel {
             questionsRequired: level.questionsRequired,
             remainingPossibleCards: level.deck,
             status: "playing",
-            strikes: 0
+            strikes: 0,
+            chips: this.chips,
+            choosingHint: false,
+            canViewRemainingCards: false,
+            probabilityRange: null
         };
 
         this.revealNextClue(state);
         return state;
     }
 
-    /**
-     * Adds the next useful clue about the hidden card (if any) and
-     * narrows the remaining possible cards to match all known clues.
-     */
+    /** Adds a useful clue about the hidden card and narrows the possible cards. */
     private revealNextClue(state: GameState): void {
         if (this.hiddenCard === null) {
             return;
@@ -179,6 +184,8 @@ export class GameScreenModel {
             return false;
         }
 
+        this.state.choosingHint = false;
+
         const parts = answer.split("/");
 
         const numericAnswer = parts.length === 2
@@ -213,8 +220,97 @@ export class GameScreenModel {
 
         this.waitingForNext = false;
         this.revealNextClue(this.state);
-
         const nextIndex = this.state.questionsAnswered;
         this.state.currentQuestion = questions[nextIndex] ?? null;
+        this.state.probabilityRange = null;
+        this.state.choosingHint = false;
+    }
+    /**Returns true if this.state.chips >= COST_OF_CLUE */
+    hasEnoughChips(): boolean { 
+        return this.chips >= COST_OF_CLUE;
+    }
+    /**Subtracts COST_OF_CLUE from this.state.chips */
+    subtractChips(): void{
+        if (this.chips < COST_OF_CLUE) {
+            throw new Error("Cannot subtract negative chips");
+        }
+        this.chips -= COST_OF_CLUE;
+        this.state.chips = this.chips;
+    }
+    /**Adds COST_OF_CLUE to this.state.chips */
+    addChips(amount: number): void{
+        if (amount < 0) {
+            throw new Error("Cannot add negative chips");
+        }
+        this.chips += amount;
+        this.state.chips = this.chips;
+    }
+    /**Returns the number of chips that the player currently has */
+    getChips(): number{
+        return this.chips;
+    }
+    /**
+     * Opens the paid-hint picker. Does not spend chips or add card facts.
+     */
+    openHintMenu(): "opened" | "not enough chips" | "already_bought" {
+        if (!this.hasEnoughChips()) {
+            return "not enough chips";
+        }
+        if (this.state.canViewRemainingCards && this.state.probabilityRange !== null) {
+            return "already_bought";
+        }
+        this.state.choosingHint = true;
+        return "opened";
+    }
+
+    /**
+     * Spends chips on the chosen hint: remaining cards, or a probability
+     * range containing the true answer. Does not add card facts.
+     */
+    buyHint(kind: HintKind): "bought" | "not enough chips" | "already_bought" {
+        if (!this.hasEnoughChips()) {
+            this.state.choosingHint = false;
+            return "not enough chips";
+        }
+
+        if (kind === "cards") {
+            if (this.state.canViewRemainingCards) {
+                this.state.choosingHint = false;
+                return "already_bought";
+            }
+            this.subtractChips();
+            this.state.canViewRemainingCards = true;
+            this.state.choosingHint = false;
+            return "bought";
+        }
+
+        if (this.state.probabilityRange !== null) {
+            this.state.choosingHint = false;
+            return "already_bought";
+        }
+
+        this.subtractChips();
+        this.state.probabilityRange = this.buildProbabilityRange(
+            this.getCorrectAnswer()
+        );
+        this.state.choosingHint = false;
+        return "bought";
+    }
+
+    /** Returns the quarter-sized probability band containing p. */
+    private buildProbabilityRange(p: number): { low: number; high: number } {
+        const buckets = [
+            { low: 0, high: 1/4 },
+            { low: 1/4, high: 1/2 },
+            { low: 1/2, high: 3/4 },
+            { low: 3/4, high: 1 }
+        ];
+        for (const bucket of buckets) {
+            if (p >= bucket.low && p < bucket.high) {
+                return bucket;
+            }
+        }
+        // Include a probability of exactly 1 in the last band.
+        return buckets[buckets.length - 1] ?? { low: 0, high: 1 };
     }
 }

@@ -69,6 +69,11 @@ const PROBABILITY_PANEL_HEIGHT = (H * 7) / 30;
 const GUESS_PANEL_Y = PROBABILITY_PANEL_Y + PROBABILITY_PANEL_HEIGHT + PANEL_GAP;
 const GUESS_PANEL_HEIGHT = H / 6;
 
+// Bottom "Resources" bar, pinned to the bottom of the stage.
+const RESOURCES_BAR_HEIGHT = H / 10;
+const RESOURCES_BAR_Y = H - RESOURCES_BAR_HEIGHT - H / 50;
+const BUTTON_HEIGHT = H / 18;
+
 export const GAME_SCREEN_CONSTANTS = {
     MARGIN: W / 32,
     HEADER_Y: H / 30,
@@ -103,9 +108,25 @@ export const GAME_SCREEN_CONSTANTS = {
     PANEL_HINT_TEXT: "#6b6b5e",
     PANEL_ROW_Y: H / 10, // the input + Submit row
 
-    REMAINING_PANEL_Y: CARD_Y + CARD_HEIGHT + H / 36,
+    // just under the visible card (card.png has transparent padding below it)
+    REMAINING_PANEL_Y: CARD_Y + VISIBLE_CARD_BOTTOM_IN_IMAGE + H / 50,
     REMAINING_PANEL_WIDTH: (W * 2) / 7,
     REMAINING_PANEL_HEIGHT: H / 7,
+    REMAINING_PANEL_X: LOGO_X,
+    OUTLINE_BUTTON_FILL: "#fffdf4",
+    OUTLINE_BUTTON_BORDER: "#d9d0b8",
+
+    // "View Possible Cards" popup
+    MODAL_WIDTH: (W * 5) / 6,
+    MODAL_HEIGHT: H * 0.85,
+    MODAL_BACKDROP: "rgba(0, 0, 0, 0.55)",
+    // 13 per row (one suit per row): a full 52-card deck fits in 4 rows above the Close button
+    MINI_CARD_WIDTH: W / 18,
+    MINI_CARD_HEIGHT: H / 7.5,
+    MINI_CARD_GAP: W / 160,
+    MINI_CARD_FONT_SIZE: H / 24,
+    MINI_CARD_RED: "#b62335",
+    MINI_CARD_BLACK: "#1a1a1a",
 
     INFO_PANEL_Y,
     INFO_PANEL_HEIGHT,
@@ -120,7 +141,15 @@ export const GAME_SCREEN_CONSTANTS = {
     SUBMIT_WIDTH: W / 12,
     FEEDBACK_FONT_SIZE: H / 45,
 
-    FOOTER_Y: (H * 9) / 10,
+    // Menu / Next sit just above the resources bar
+    FOOTER_Y: RESOURCES_BAR_Y - BUTTON_HEIGHT - H / 40,
+
+    RESOURCES_BAR_X: W / 32,
+    RESOURCES_BAR_Y,
+    RESOURCES_BAR_WIDTH: W - W / 16,
+    RESOURCES_BAR_HEIGHT,
+    RESOURCES_TITLE_FONT_SIZE: H / 38,
+    RESOURCES_BUTTON_GAP: W / 110,
 
     STATS_X: (W * 3) / 4,
     STATS_Y_STRIKES: H / 25,
@@ -128,7 +157,7 @@ export const GAME_SCREEN_CONSTANTS = {
     STATS_FONT_SIZE: H / 34,
 
     // Button sizes. The views center each row, so only sizes and gaps live here.
-    BUTTON_HEIGHT: H / 18,
+    BUTTON_HEIGHT,
     BUTTON_FONT_SIZE: H / 43,
     BUTTON_RADIUS: H / 75,
     BUTTON_STROKE: H / 200,
@@ -248,3 +277,7 @@ export const COLORS = {
     accent: "#f1c653",
     border: "#fffdf4",
 };
+
+export const STARTING_CHIPS = 10; // number of chips the player starts with
+
+export const COST_OF_CLUE = 3; // number of chips each clue costs
