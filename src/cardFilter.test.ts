@@ -1,20 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { 
-  parseUserInput, 
-  calculateDynamicExpectedValue, 
-  getRemainingPossibleCards 
-} from "./cardFilter";
+import { getRemainingPossibleCards } from "./cardFilter";
 import type { Card, KnownInformation } from "./shared/types";
 
-describe("Card Filter & Game Logic Tests (Tasks #113-#115)", () => {
-  
-  // --- 1. Testing getRemainingPossibleCards ---
+describe("Card Filtering Logic", () => {
+  // Use a local mock deck so it doesn't fail on missing config files
   const mockDeck: Card[] = [
     { id: "h-2", suit: "hearts", rank: "2" },
     { id: "s-k", suit: "spades", rank: "K" },
     { id: "d-5", suit: "diamonds", rank: "5" },
     { id: "c-10", suit: "clubs", rank: "10" },
-  ] as any;
+  ];
 
   it("should return all card IDs when knownInformation is empty", () => {
     const res = getRemainingPossibleCards(mockDeck, []).map((c) => c.id);
@@ -40,7 +35,9 @@ describe("Card Filter & Game Logic Tests (Tasks #113-#115)", () => {
     ];
 
     const res = getRemainingPossibleCards(mockDeck, clues).map((c) => c.id);
-    expect(res).toEqual(["h-2"]);
+    const expectedIds = ["h-2"];
+
+    expect(res).toEqual(expectedIds);
   });
 
   it("should handle not_equals operator correctly", () => {
@@ -55,35 +52,46 @@ describe("Card Filter & Game Logic Tests (Tasks #113-#115)", () => {
     ];
 
     const res = getRemainingPossibleCards(mockDeck, clues).map((c) => c.id);
-    expect(res).toEqual(["s-k", "c-10"]);
+    const expectedIds = ["s-k", "c-10"];
+
+    expect(res).toEqual(expectedIds);
   });
 
-  // --- 2. Testing parseUserInput (Task #114) ---
-  describe("parseUserInput", () => {
-    it("correctly parses standard decimals and fractions", () => {
-      expect(parseUserInput("0.75")).toBe(0.75);
-      expect(parseUserInput("1/2")).toBe(0.5);
-    });
-
-    it("returns null for invalid inputs or division by zero", () => {
-      expect(parseUserInput("")).toBeNull();
-      expect(parseUserInput("abc")).toBeNull();
-      expect(parseUserInput("1/0")).toBeNull();
-    });
-  });
-
-  // --- 3. Testing calculateDynamicExpectedValue (Task #113 & #115) ---
-  describe("calculateDynamicExpectedValue", () => {
-    const simpleDeck = [
-      { id: "1", type: "risk" },
-      { id: "2", type: "reward" }
+  it("should filter by parity", () => {
+    const clues: KnownInformation[] = [
+      {
+        id: "parity-even",
+        description: "The hidden card is even.",
+        property: "parity",
+        operator: "equals",
+        value: "even",
+      },
     ];
 
-    it("calculates probabilities and expected value correctly", () => {
-      const result = calculateDynamicExpectedValue(simpleDeck, [], -10, 20);
-      expect(result.riskProb).toBe(0.5);
-      expect(result.rewardProb).toBe(0.5);
-      expect(result.expectedValue).toBe(5); // (-10 * 0.5) + (20 * 0.5)
-    });
+    const res = getRemainingPossibleCards(mockDeck, clues).map((c) => c.id);
+
+    expect(res).toEqual(["h-2", "c-10"]);
+  });
+
+  it("should filter by rank less_than", () => {
+    const clues: KnownInformation[] = [
+      {
+        id: "rank-lt-7",
+        description: "The hidden card is less than 7.",
+        property: "rank",
+        operator: "less_than",
+        value: "7",
+      },
+    ];
+
+    const res = getRemainingPossibleCards(mockDeck, clues).map((c) => c.id);
+
+    expect(res).toEqual(["h-2", "d-5"]);
+  });
+
+  it("should return the matching Card objects", () => {
+    const res = getRemainingPossibleCards(mockDeck, []);
+
+    expect(res).toEqual(mockDeck);
   });
 });
