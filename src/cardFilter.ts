@@ -27,6 +27,10 @@ export function getRemainingPossibleCards(
   });
 }
 
+/**
+ * Task #113: Dynamically calculates probabilities from the remaining deck 
+ * and computes the updated Expected Value.
+ */
 export function calculateDynamicExpectedValue(
   deck: Array<{ id: string; type: string }>,
   revealedCardIds: string[],
@@ -45,20 +49,18 @@ export function calculateDynamicExpectedValue(
   const riskProb = riskCount / totalCount;
   const rewardProb = rewardCount / totalCount;
 
+  // Automatically update input fields if present
+  const riskInput = document.getElementById('risk-prob-input') as HTMLInputElement;
+  const rewardInput = document.getElementById('reward-prob-input') as HTMLInputElement;
+  if (riskInput) riskInput.value = riskProb.toFixed(2);
+  if (rewardInput) rewardInput.value = rewardProb.toFixed(2);
+
   // Calculate Expected Value: (Risk Prob * Risk Value) + (Reward Prob * Reward Value)
   const expectedValue = (riskProb * riskValue) + (rewardProb * rewardValue);
 
-  // Automatically update input fields only if document exists (browser environment)
-  if (typeof document !== 'undefined') {
-    const riskInput = document.getElementById('risk-prob-input') as HTMLInputElement;
-    const rewardInput = document.getElementById('reward-prob-input') as HTMLInputElement;
-    if (riskInput) riskInput.value = riskProb.toFixed(2);
-    if (rewardInput) rewardInput.value = rewardProb.toFixed(2);
-
-    const evDisplay = document.getElementById('expected-value-display');
-    if (evDisplay) {
-      evDisplay.innerText = expectedValue.toFixed(2);
-    }
+  const evDisplay = document.getElementById('expected-value-display');
+  if (evDisplay) {
+    evDisplay.innerText = expectedValue.toFixed(2);
   }
 
   return { riskProb, rewardProb, expectedValue };
