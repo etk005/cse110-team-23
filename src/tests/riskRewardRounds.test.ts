@@ -14,9 +14,14 @@ function correctInputs(model: RiskRewardScreenModel): Record<CalcField, string> 
     };
 }
 
-/** Grid position of the first face-down card of the given type. */
-function indexOf(model: RiskRewardScreenModel, type: "risk" | "reward"): number {
-    return model.getDeck().findIndex((card, i) => card.type === type && !model.isRevealed(i));
+/** Grid position of the first face-down card of the given type (and Reward value, if given). */
+function indexOf(model: RiskRewardScreenModel, type: "risk" | "reward", value?: number): number {
+    return model.getDeck().findIndex(
+        (card, i) =>
+            card.type === type &&
+            !model.isRevealed(i) &&
+            (value === undefined || (card.type === "reward" && card.value === value))
+    );
 }
 
 /** Submits correct answers so a card can be flipped. */
@@ -68,34 +73,6 @@ describe("Risk/Reward flipping (#16)", () => {
         expect(model.getRiskCount()).toBe(7);
     });
 
-    it("a Reward adds its chips and starts the next round with cards locked", () => {
-        const model = new RiskRewardScreenModel();
-        unlock(model);
-        model.flip(indexOf(model, "reward"));
-        expect(model.getChips()).toBe(1);
-        expect(model.getPhase()).toBe("calculating");
-        expect(model.flip(indexOf(model, "reward"))).toBeNull();
-    });
-
-    it("chips build up over several rewards", () => {
-        const model = new RiskRewardScreenModel();
-        for (let round = 0; round < 3; round++) {
-            unlock(model);
-            expect(model.flip(indexOf(model, "reward"))).toEqual({ type: "reward", value: 1 });
-        }
-        expect(model.getChips()).toBe(3);
-    });
-
-    it("a Risk ends the game and blocks further flips", () => {
-        const model = new RiskRewardScreenModel();
-        unlock(model);
-        expect(model.flip(indexOf(model, "risk"))).toEqual({ type: "risk" });
-        expect(model.getPhase()).toBe("lost");
-        model.checkAnswers(correctInputs(model));
-        expect(model.getPhase()).toBe("lost");
-        expect(model.flip(indexOf(model, "reward"))).toBeNull();
-    });
-
     it("allows only one flip per round", () => {
         const model = new RiskRewardScreenModel();
         unlock(model);
@@ -108,6 +85,7 @@ describe("Risk/Reward flipping (#16)", () => {
         unlock(model);
         const index = indexOf(model, "reward");
         model.flip(index);
+        model.continueRound();
         unlock(model);
         expect(model.flip(index)).toBeNull();
         expect(model.getPhase()).toBe("flipping");
@@ -124,9 +102,59 @@ describe("Risk/Reward flipping (#16)", () => {
         const model = new RiskRewardScreenModel();
         unlock(model);
         model.flip(indexOf(model, "reward"));
+        model.continueRound();
         // 7 risk / 13 reward / 1 chip: 13/20 - 7/20 * 1 = 6/20
         expect(model.getCorrectAnswers().risk).toBeCloseTo(7 / 20);
         expect(model.getCorrectAnswers().reward).toBeCloseTo(13 / 20);
         expect(model.getCorrectAnswers().expectedValue).toBeCloseTo(6 / 20);
+    });
+});
+
+describe("Risk/Reward reward outcome (#17)", () => {
+    it("adds chips and offers cash out / continue", () => {
+        const model = new RiskRewardScreenModel();
+        unlock(model);
+        model.flip(indexOf(model, "reward"));
+        expect(model.getChips()).toBe(1);
+        expect(model.getPhase()).toBe("reward");
+        expect(model.canContinue()).toBe(true);
+    });
+
+    it("continue keeps chips and the remaining deck, and locks cards again", () => {
+        const model = new RiskRewardScreenModel();
+        unlock(model);
+        model.flip(indexOf(model, "reward", 1));
+        expect(model.continueRound()).toBe(true);
+        expect(model.getPhase()).toBe("calculating");
+        expect(model.getChips()).toBe(1);
+        expect(model.getTotalCount()).toBe(20);
+        expect(model.flip(indexOf(model, "reward"))).toBeNull();
+    });
+
+    it("chips build up over several rewards", () => {
+        const model = new RiskRewardScreenModel();
+        for (let round = 0; round < 3; round++) {
+            unlock(model);
+            expect(model.flip(indexOf(model, "reward"))).toEqual({ type: "reward", value: 1 });
+            model.continueRound();
+        }
+        expect(model.getChips()).toBe(3);
+    });
+
+    it("cash out returns the chips and ends the game", () => {
+        const model = new RiskRewardScreenModel();
+        unlock(model);
+        model.flip(indexOf(model, "reward"));
+        expect(model.cashOut()).toBe(1);
+        expect(model.getPhase()).toBe("cashedOut");
+        expect(model.continueRound()).toBe(false);
+        expect(model.cashOut()).toBe(0);
+    });
+
+    it("can't cash out or continue before a reward", () => {
+        const model = new RiskRewardScreenModel();
+        expect(model.cashOut()).toBe(0);
+        expect(model.continueRound()).toBe(false);
+        expect(model.getPhase()).toBe("calculating");
     });
 });

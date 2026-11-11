@@ -20,9 +20,11 @@ export const REWARD_CARD_COUNT = Object.values(REWARD_CARD_VALUES).reduce((sum, 
  * Where the player is in the current round:
  * - "calculating": entering P(Risk), P(Reward) and expected value; cards locked
  * - "flipping":    all three answers were correct; the player may flip one card
- * - "lost":        a Risk was flipped; game over
+ * - "reward":      a Reward was flipped; choose Cash Out or Continue
+ * - "lost":        a Risk was flipped; game over (unbanked chips are never paid out)
+ * - "cashedOut":   the player banked their chips; game over
  */
-export type RiskRewardPhase = "calculating" | "flipping" | "lost";
+export type RiskRewardPhase = "calculating" | "flipping" | "reward" | "lost" | "cashedOut";
 
 /** The three values the player calculates before each flip. */
 export type CalcField = "risk" | "reward" | "expectedValue";
@@ -189,7 +191,7 @@ export class RiskRewardScreenModel {
     /**
      * Flips the card at grid position `index`. Only allowed in the "flipping"
      * phase and on a card that hasn't been flipped. A Reward adds its value in
-     * chips and starts the next round; a Risk ends the game.
+     * chips; a Risk ends the game.
      * @returns the revealed card, or null if the flip isn't allowed
      */
     flip(index: number): RiskRewardCard | null {
@@ -200,11 +202,40 @@ export class RiskRewardScreenModel {
         this.revealed[index] = true;
         if (card.type === "reward") {
             this.chips += card.value;
-            this.phase = "calculating";
+            this.phase = "reward";
         } else {
             this.phase = "lost";
         }
         return { ...card };
+    }
+
+    /** True if the player can play another round (a Reward was just flipped and cards remain). */
+    canContinue(): boolean {
+        return this.phase === "reward" && this.getTotalCount() > 0;
+    }
+
+    /** After a Reward: start the next round with the remaining deck, keeping chips. */
+    continueRound(): boolean {
+        if (!this.canContinue()) {
+            return false;
+        }
+        this.phase = "calculating";
+        return true;
+    }
+
+    /**
+     * After a Reward: ends the minigame and hands back the chips to add to
+     * the player's total balance.
+     * @returns the chips banked, or 0 if cashing out isn't allowed right now
+     */
+    cashOut(): number {
+        if (this.phase !== "reward") {
+            return 0;
+        }
+        const banked = this.chips;
+        this.chips = 0;
+        this.phase = "cashedOut";
+        return banked;
     }
 
     /** Chance the next flip is a Risk card, from the cards still in the deck. */

@@ -18,7 +18,9 @@ export interface RiskRewardViewState {
     rewardCount: number; // Reward cards not yet flipped
     rewardCounts: Record<number, number>; // face-down Reward cards per chip value
     chips: number;       // temporary minigame chips (separate from the total balance)
+    coins: number;       // the player's coins (cash-outs are added here)
     phase: RiskRewardPhase;
+    canContinue: boolean; // a Reward was flipped and cards are left
     message: string;      // status line under the Submit button
     messageTone: "info" | "success" | "error";
 }
@@ -29,6 +31,8 @@ export interface RiskRewardHandlers {
     onInputChange: (field: CalcField, text: string) => void;
     onSubmit: () => void;
     onFlip: (index: number) => void;
+    onCashOut: () => void;
+    onContinue: () => void;
 }
 
 /** Color for the text under an input: format errors, "Correct" or "Not quite". */
@@ -345,6 +349,7 @@ export class RiskRewardScreenView implements View {
                 ? REWARD_VALUES.map((value): [string, number] => [`+${value} REWARDS LEFT`, stats.rewardCounts[value] ?? 0])
                 : []),
             ["CURRENT MINIGAME CHIPS", stats.chips],
+            ["YOUR COINS", stats.coins],
         ];
         // Box width is whatever fits STATS_COLUMNS boxes (plus gaps) inside
         // the panel's padding; panel height grows with the number of rows.
@@ -515,14 +520,18 @@ export class RiskRewardScreenView implements View {
         return card;
     }
 
-    /** Bottom of the calculations panel: Submit while calculating, then a status message. */
+    /**
+     * Bottom of the calculations panel: Submit while calculating, then a status
+     * message, then Cash Out / Continue after a Reward, or Back to Menu after
+     * cashing out.
+     */
     private renderActions(stats: RiskRewardViewState): void {
         this.calcActions.destroyChildren();
         const width = c.CALC_WIDTH - 2 * c.CALC_PADDING;
         let y = 0;
 
         if (stats.phase === "calculating") {
-            this.calcActions.add(this.createActionButton("Submit", 0, y, width, this.handlers.onSubmit));
+            this.calcActions.add(this.createActionButton("Submit", 0, y, width, "primary", this.handlers.onSubmit));
             y += c.CALC_BUTTON_HEIGHT + c.CALC_BUTTON_GAP;
         }
 
@@ -543,23 +552,40 @@ export class RiskRewardScreenView implements View {
                 fill: toneColor,
             });
             this.calcActions.add(message);
+            y += message.height() + c.CALC_BUTTON_GAP;
+        }
+
+        const half = (width - c.CALC_BUTTON_GAP) / 2;
+        if (stats.phase === "reward") {
+            this.calcActions.add(
+                this.createActionButton("Cash Out", 0, y, stats.canContinue ? half : width, "primary", this.handlers.onCashOut)
+            );
+            if (stats.canContinue) {
+                this.calcActions.add(
+                    this.createActionButton("Continue", half + c.CALC_BUTTON_GAP, y, half, "secondary", this.handlers.onContinue)
+                );
+            }
+        } else if (stats.phase === "cashedOut") {
+            this.calcActions.add(this.createActionButton("Back to Menu", 0, y, width, "primary", this.handlers.onMenu));
         }
     }
 
-    /** Red filled button. */
+    /** Red filled ("primary") or cream outlined ("secondary") button. */
     private createActionButton(
         label: string,
         x: number,
         y: number,
         width: number,
+        style: "primary" | "secondary",
         onClick: () => void
     ): Konva.Group {
+        const primary = style === "primary";
         const button = new Konva.Group({ x, y });
         button.add(new Konva.Rect({
             width,
             height: c.CALC_BUTTON_HEIGHT,
-            fill: COLORS.button,
-            stroke: COLORS.buttonDark,
+            fill: primary ? COLORS.button : c.CARD_FILL,
+            stroke: primary ? COLORS.buttonDark : c.CARD_STROKE,
             strokeWidth: c.MENU_BUTTON_STROKE,
             cornerRadius: c.MENU_BUTTON_RADIUS,
         }));
@@ -570,7 +596,7 @@ export class RiskRewardScreenView implements View {
             fontSize: c.MENU_BUTTON_FONT_SIZE,
             fontFamily: "Arial",
             fontStyle: "bold",
-            fill: COLORS.text,
+            fill: primary ? COLORS.text : COLORS.background,
             align: "center",
             verticalAlign: "middle",
         }));

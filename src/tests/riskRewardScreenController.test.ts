@@ -32,6 +32,7 @@ vi.mock("../screens/RiskRewardScreen/RiskRewardScreenView.ts", () => ({
 const { RiskRewardScreenController } = await import(
     "../screens/RiskRewardScreen/RiskRewardScreenController.ts"
 );
+const { PlayerResources } = await import("../game/playerResources.ts");
 
 function lastState(): RiskRewardViewState {
     return viewMock.render.mock.lastCall?.[0] as RiskRewardViewState;
@@ -39,6 +40,7 @@ function lastState(): RiskRewardViewState {
 
 describe("RiskRewardScreenController", () => {
     let screens: Screen[];
+    let resources: InstanceType<typeof PlayerResources>;
     let controller: InstanceType<typeof RiskRewardScreenController>;
 
     const typeCorrectAnswers = (): void => {
@@ -60,12 +62,14 @@ describe("RiskRewardScreenController", () => {
         viewMock.inputs = { risk: "", reward: "", expectedValue: "" };
         screens = [];
         const switcher: ScreenSwitcher = { switchToScreen: (screen) => screens.push(screen) };
-        controller = new RiskRewardScreenController(switcher);
+        resources = new PlayerResources(10);
+        controller = new RiskRewardScreenController(switcher, resources);
         controller.startGame();
     });
 
-    it("starts locked with every card face-down", () => {
+    it("starts locked with the player's coins shown", () => {
         expect(lastState().phase).toBe("calculating");
+        expect(lastState().coins).toBe(10);
         expect(lastState().cards.every((face) => face === null)).toBe(true);
     });
 
@@ -100,27 +104,38 @@ describe("RiskRewardScreenController", () => {
         expect(viewMock.setFieldFeedback).toHaveBeenLastCalledWith("risk", null);
     });
 
-    it("a Reward adds chips, clears the inputs and starts the next round", () => {
+    it("cashing out turns the chips into coins", () => {
         typeCorrectAnswers();
         viewMock.handlers?.onSubmit();
-        viewMock.clearInputs.mockClear();
         flip("reward");
+        expect(lastState().phase).toBe("reward");
+        expect(lastState().canContinue).toBe(true);
 
-        expect(viewMock.clearInputs).toHaveBeenCalled();
-        expect(lastState().phase).toBe("calculating");
-        expect(lastState().chips).toBe(1);
-        expect(lastState().cardCount).toBe(20);
-        expect(lastState().message).toContain("Reward +1");
-    });
+        const won = lastState().chips;
+        expect(won).toBeGreaterThan(0);
+        expect(lastState().message).toContain(`Reward +${won}`);
 
-    it("a Risk ends the game", () => {
-        typeCorrectAnswers();
-        viewMock.handlers?.onSubmit();
-        flip("risk");
+        viewMock.handlers?.onCashOut();
+        expect(resources.getCoins()).toBe(10 + won);
+        expect(lastState().phase).toBe("cashedOut");
+        expect(lastState().coins).toBe(10 + won);
 
-        expect(lastState().phase).toBe("lost");
-        expect(lastState().message).toContain("Risk");
         viewMock.handlers?.onMenu();
         expect(screens).toEqual([{ type: "menu" }]);
+    });
+
+    it("continue clears the inputs and starts a new round", () => {
+        typeCorrectAnswers();
+        viewMock.handlers?.onSubmit();
+        flip("reward");
+        viewMock.clearInputs.mockClear();
+
+        viewMock.handlers?.onContinue();
+        expect(viewMock.clearInputs).toHaveBeenCalled();
+        expect(lastState().phase).toBe("calculating");
+        expect(lastState().chips).toBeGreaterThan(0);
+        expect(lastState().cardCount).toBe(20);
+        const rewardsLeft = Object.values(lastState().rewardCounts).reduce((a, b) => a + b, 0);
+        expect(rewardsLeft).toBe(13);
     });
 });

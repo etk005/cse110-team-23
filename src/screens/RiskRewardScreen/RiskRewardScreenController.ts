@@ -4,6 +4,7 @@ import { RiskRewardScreenModel } from "./RiskRewardScreenModel.ts";
 import type { AnswerCheck, CalcField } from "./RiskRewardScreenModel.ts";
 import { RiskRewardScreenView } from "./RiskRewardScreenView.ts";
 import type { RiskRewardViewState } from "./RiskRewardScreenView.ts";
+import { PlayerResources } from "../../game/playerResources.ts";
 import { parseNumber, parseProbability } from "../../game/numberInput.ts";
 import type { ParseResult } from "../../game/numberInput.ts";
 
@@ -12,8 +13,8 @@ const CALC_FIELDS: CalcField[] = ["risk", "reward", "expectedValue"];
 /**
  * Controls the Risk/Reward minigame screen. Each round: the player enters
  * P(Risk), P(Reward) and the expected value of a flip, submits, and once all
- * three are correct flips a card. A Reward adds chips and starts the next
- * round; a Risk ends the game.
+ * three are correct flips a card. A Reward lets them cash out or continue;
+ * a Risk ends the game and loses their temporary chips.
  */
 export class RiskRewardScreenController extends ScreenController {
     private model: RiskRewardScreenModel;
@@ -22,8 +23,15 @@ export class RiskRewardScreenController extends ScreenController {
     private message = "";
     private messageTone: RiskRewardViewState["messageTone"] = "info";
 
-    /** @param screenSwitcher Used by the Menu button to leave the minigame */
-    constructor(screenSwitcher: ScreenSwitcher, random: () => number = Math.random) {
+    /**
+     * @param screenSwitcher Used by the Menu buttons to leave the minigame
+     * @param resources The player's coins; Cash Out turns minigame chips into coins
+     */
+    constructor(
+        screenSwitcher: ScreenSwitcher,
+        private resources: PlayerResources = new PlayerResources(),
+        random: () => number = Math.random
+    ) {
         super();
         this.model = new RiskRewardScreenModel(random);
         this.view = new RiskRewardScreenView({
@@ -31,6 +39,8 @@ export class RiskRewardScreenController extends ScreenController {
             onInputChange: (field, text) => this.handleInputChange(field, text),
             onSubmit: () => this.submitAnswers(),
             onFlip: (index) => this.flipCard(index),
+            onCashOut: () => this.cashOut(),
+            onContinue: () => this.continueRound(),
         });
     }
 
@@ -52,7 +62,9 @@ export class RiskRewardScreenController extends ScreenController {
             rewardCount: this.model.getRewardCount(),
             rewardCounts: this.model.getRewardCountByValue(),
             chips: this.model.getChips(),
+            coins: this.resources.getCoins(),
             phase: this.model.getPhase(),
+            canContinue: this.model.canContinue(),
             message: this.message,
             messageTone: this.messageTone,
         });
@@ -118,14 +130,42 @@ export class RiskRewardScreenController extends ScreenController {
             return;
         }
         if (card.type === "reward") {
-            this.view.clearInputs();
+            const chips = this.model.getChips();
             this.setMessage(
-                `Reward +${card.value}! You now have ${this.model.getChips()} chips. Recalculate for the next flip.`,
+                this.model.canContinue()
+                    ? `Reward +${card.value}! You now have ${chips} chips. Cash out to keep them, or continue for more.`
+                    : `Reward +${card.value}! That was the last card — cash out your ${chips} chips.`,
                 "success"
             );
         } else {
             this.setMessage("Risk! Game over.", "error");
         }
+        this.refresh();
+    }
+
+    /** Turns the temporary chips into coins and ends the minigame. */
+    cashOut(): void {
+        if (this.model.getPhase() !== "reward") {
+            return;
+        }
+        const banked = this.model.cashOut();
+        if (banked > 0) {
+            this.resources.earnCoins(banked);
+        }
+        this.setMessage(
+            `You cashed out ${banked} chips for ${banked} coins! You now have ${this.resources.getCoins()} coins.`,
+            "success"
+        );
+        this.refresh();
+    }
+
+    /** Next round with the remaining deck: chips kept, inputs cleared, cards locked again. */
+    continueRound(): void {
+        if (!this.model.continueRound()) {
+            return;
+        }
+        this.view.clearInputs();
+        this.setMessage("New round: recalculate with the cards that are left.", "info");
         this.refresh();
     }
 
