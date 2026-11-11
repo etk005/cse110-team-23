@@ -89,6 +89,8 @@ export class GameScreenView implements View {
         });
 
         this.group.add(background);
+        const imageGroup = new Konva.Group();
+        this.group.add(imageGroup);
 
         //Logo
         Konva.Image.fromURL("/Brand.png", (logo) => {
@@ -99,7 +101,7 @@ export class GameScreenView implements View {
             logo.height(c.LOGO_HEIGHT);
             logo.offsetX(0);
             logo.offsetY(0);
-            this.group.add(logo);
+            imageGroup.add(logo);
             this.group.getLayer()?.draw();
         });
 
@@ -154,7 +156,7 @@ export class GameScreenView implements View {
             card.y(GAME_SCREEN_CONSTANTS.CARD_Y);
             card.width(GAME_SCREEN_CONSTANTS.CARD_WIDTH);
             card.height(GAME_SCREEN_CONSTANTS.CARD_HEIGHT);
-            this.group.add(card);
+            imageGroup.add(card);
             this.group.getLayer()?.draw();
         });
 
@@ -199,6 +201,7 @@ export class GameScreenView implements View {
                 y: rowY + rowHeight + layout.PANEL_HINT_GAP,
                 text: hintText,
                 fontSize: layout.PANEL_HINT_FONT_SIZE,
+                fontStyle: "bold",
                 fontFamily: "Arial",
                 fill: layout.PANEL_HINT_TEXT,
             })

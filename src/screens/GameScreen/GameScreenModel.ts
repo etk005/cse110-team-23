@@ -206,11 +206,17 @@ export class GameScreenModel {
     }
     /**Subtracts COST_OF_CLUE from this.state.chips */
     subtractChips(): void{
+        if (this.chips < COST_OF_CLUE) {
+            throw new Error("Cannot subtract negative chips");
+        }
         this.chips -= COST_OF_CLUE;
         this.state.chips = this.chips;
     }
     /**Adds COST_OF_CLUE to this.state.chips */
     addChips(amount: number): void{
+        if (amount < 0) {
+            throw new Error("Cannot add negative chips");
+        }
         this.chips += amount;
         this.state.chips = this.chips;
     }

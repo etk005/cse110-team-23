@@ -334,6 +334,30 @@ describe("GameScreenModel", () => {
             });
         });
     });
+    describe("Adding Chips", () =>{
+        it("adds chips to the model", () => {
+            model.addChips(10);
+            expect(model.getChips()).toBe(STARTING_CHIPS + 10);
+            expect(model.getState().chips).toBe(STARTING_CHIPS + 10);
+        });
+        it("does not add negative chips", ()=>{
+            expect(model.addChips(-10)).toThrow("Cannot add negative chips");
+            expect(model.getChips()).toBe(STARTING_CHIPS);
+            expect(model.getState().chips).toBe(STARTING_CHIPS);
+        })
+    });
+    describe("Subtracting Chips", () =>{
+        it("subtracts chips from the model", () => {
+            model.subtractChips();
+            expect(model.getChips()).toBe(STARTING_CHIPS - COST_OF_CLUE);
+            expect(model.getState().chips).toBe(STARTING_CHIPS - COST_OF_CLUE);
+        });
+        it("does not subtract negative chips", ()=>{
+            expect(model.subtractChips()).toThrow("Cannot subtract negative chips");
+            expect(model.getChips()).toBe(STARTING_CHIPS);
+            expect(model.getState().chips).toBe(STARTING_CHIPS);
+        })
+    });
 
     describe("Paid hints", () => {
         it("opens a hint menu without spending chips or adding card facts", () => {
