@@ -12,7 +12,8 @@ const CALC_FIELDS: CalcField[] = ["risk", "reward", "expectedValue"];
 /**
  * Controls the Risk/Reward minigame screen. Each round: the player enters
  * P(Risk), P(Reward) and the expected value of a flip, submits, and once all
- * three are correct the cards unlock.
+ * three are correct flips a card. A Reward adds chips and starts the next
+ * round; a Risk ends the game.
  */
 export class RiskRewardScreenController extends ScreenController {
     private model: RiskRewardScreenModel;
@@ -29,6 +30,7 @@ export class RiskRewardScreenController extends ScreenController {
             onMenu: () => screenSwitcher.switchToScreen({ type: "menu" }),
             onInputChange: (field, text) => this.handleInputChange(field, text),
             onSubmit: () => this.submitAnswers(),
+            onFlip: (index) => this.flipCard(index),
         });
     }
 
@@ -44,6 +46,7 @@ export class RiskRewardScreenController extends ScreenController {
     /** Redraws the screen from the model. */
     refresh(): void {
         this.view.render({
+            cards: this.model.getCardFaces(),
             cardCount: this.model.getTotalCount(),
             riskCount: this.model.getRiskCount(),
             rewardCount: this.model.getRewardCount(),
@@ -96,7 +99,7 @@ export class RiskRewardScreenController extends ScreenController {
         }
 
         if (this.model.getPhase() === "flipping") {
-            this.setMessage("All correct! The cards are unlocked.", "success");
+            this.setMessage("All correct! Click a card to flip it.", "success");
         } else {
             const wrong = CALC_FIELDS.filter((field) => result[field] !== "correct").length;
             this.setMessage(
@@ -106,6 +109,24 @@ export class RiskRewardScreenController extends ScreenController {
         }
         this.refresh();
         return result;
+    }
+
+    /** Flips the card at grid position `index` (ignored unless cards are unlocked). */
+    flipCard(index: number): void {
+        const card = this.model.flip(index);
+        if (card === null) {
+            return;
+        }
+        if (card.type === "reward") {
+            this.view.clearInputs();
+            this.setMessage(
+                `Reward +${card.value}! You now have ${this.model.getChips()} chips. Recalculate for the next flip.`,
+                "success"
+            );
+        } else {
+            this.setMessage("Risk! Game over.", "error");
+        }
+        this.refresh();
     }
 
     private setMessage(message: string, tone: RiskRewardViewState["messageTone"]): void {

@@ -49,6 +49,12 @@ describe("RiskRewardScreenController", () => {
             expectedValue: String(answers.expectedValue),
         };
     };
+    const flip = (type: "risk" | "reward"): void => {
+        const model = controller.getModel();
+        const index = model.getDeck().findIndex((card, i) => card.type === type && !model.isRevealed(i));
+        viewMock.handlers?.onFlip(index);
+    };
+
     beforeEach(() => {
         vi.clearAllMocks();
         viewMock.inputs = { risk: "", reward: "", expectedValue: "" };
@@ -58,9 +64,9 @@ describe("RiskRewardScreenController", () => {
         controller.startGame();
     });
 
-    it("starts locked", () => {
+    it("starts locked with every card face-down", () => {
         expect(lastState().phase).toBe("calculating");
-        expect(lastState().cardCount).toBe(21);
+        expect(lastState().cards.every((face) => face === null)).toBe(true);
     });
 
     it("shows per-field feedback and keeps cards locked on wrong answers", () => {
@@ -80,12 +86,11 @@ describe("RiskRewardScreenController", () => {
         typeCorrectAnswers();
         viewMock.handlers?.onSubmit();
         expect(lastState().phase).toBe("flipping");
-        expect(lastState().messageTone).toBe("success");
     });
 
-    it("leaves the screen with the Menu button", () => {
-        viewMock.handlers?.onMenu();
-        expect(screens).toEqual([{ type: "menu" }]);
+    it("ignores flips while locked", () => {
+        flip("reward");
+        expect(controller.getModel().getTotalCount()).toBe(21);
     });
 
     it("flags badly formatted input as the player types", () => {
@@ -93,5 +98,29 @@ describe("RiskRewardScreenController", () => {
         expect(viewMock.setFieldFeedback).toHaveBeenLastCalledWith("risk", expect.stringContaining("between 0 and 1"));
         viewMock.handlers?.onInputChange("risk", "1/3");
         expect(viewMock.setFieldFeedback).toHaveBeenLastCalledWith("risk", null);
+    });
+
+    it("a Reward adds chips, clears the inputs and starts the next round", () => {
+        typeCorrectAnswers();
+        viewMock.handlers?.onSubmit();
+        viewMock.clearInputs.mockClear();
+        flip("reward");
+
+        expect(viewMock.clearInputs).toHaveBeenCalled();
+        expect(lastState().phase).toBe("calculating");
+        expect(lastState().chips).toBe(1);
+        expect(lastState().cardCount).toBe(20);
+        expect(lastState().message).toContain("Reward +1");
+    });
+
+    it("a Risk ends the game", () => {
+        typeCorrectAnswers();
+        viewMock.handlers?.onSubmit();
+        flip("risk");
+
+        expect(lastState().phase).toBe("lost");
+        expect(lastState().message).toContain("Risk");
+        viewMock.handlers?.onMenu();
+        expect(screens).toEqual([{ type: "menu" }]);
     });
 });

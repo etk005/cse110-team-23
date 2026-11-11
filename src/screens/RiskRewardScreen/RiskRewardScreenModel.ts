@@ -19,9 +19,10 @@ export const REWARD_CARD_COUNT = Object.values(REWARD_CARD_VALUES).reduce((sum, 
 /**
  * Where the player is in the current round:
  * - "calculating": entering P(Risk), P(Reward) and expected value; cards locked
- * - "flipping":    all three answers were correct; the cards are unlocked
+ * - "flipping":    all three answers were correct; the player may flip one card
+ * - "lost":        a Risk was flipped; game over
  */
-export type RiskRewardPhase = "calculating" | "flipping";
+export type RiskRewardPhase = "calculating" | "flipping" | "lost";
 
 /** The three values the player calculates before each flip. */
 export type CalcField = "risk" | "reward" | "expectedValue";
@@ -39,6 +40,8 @@ export class RiskRewardScreenModel {
     private deck: RiskRewardCard[] = [];
     // Temporary chips won during this minigame (lost if a Risk card is flipped).
     private chips = 0;
+    // revealed[i] is true once the card at grid position i has been flipped
+    private revealed: boolean[] = [];
     private phase: RiskRewardPhase = "calculating";
 
     /**
@@ -56,6 +59,7 @@ export class RiskRewardScreenModel {
             this.random
         );
         this.chips = 0;
+        this.revealed = this.deck.map(() => false);
         this.phase = "calculating";
     }
 
@@ -99,29 +103,29 @@ export class RiskRewardScreenModel {
         return this.chips;
     }
 
-    /** Number of Risk cards in the deck. */
+    /** Number of Risk cards not yet flipped. */
     getRiskCount(): number {
         return this.countRemaining("risk");
     }
 
-    /** Number of Reward cards in the deck. */
+    /** Number of Reward cards not yet flipped. */
     getRewardCount(): number {
         return this.countRemaining("reward");
     }
 
-    /** Number of cards in the deck. */
+    /** Number of cards not yet flipped. */
     getTotalCount(): number {
-        return this.deck.length;
+        return this.revealed.filter((isRevealed) => !isRevealed).length;
     }
 
-    /** Reward cards for each value, e.g. { 1: 7, 2: 5, 5: 2 }. */
+    /** Face-down Reward cards for each value, e.g. { 1: 7, 2: 5, 5: 2 }. */
     getRewardCountByValue(): Record<number, number> {
         const counts: Record<number, number> = {};
         for (const value of REWARD_VALUES) {
             counts[value] = 0;
         }
-        this.deck.forEach((card) => {
-            if (card.type === "reward") {
+        this.deck.forEach((card, i) => {
+            if (card.type === "reward" && !this.revealed[i]) {
                 counts[card.value] = (counts[card.value] ?? 0) + 1;
             }
         });
@@ -129,11 +133,21 @@ export class RiskRewardScreenModel {
     }
 
     private countRemaining(type: RiskRewardCard["type"]): number {
-        return this.deck.filter((card) => card.type === type).length;
+        return this.deck.filter((card, i) => card.type === type && !this.revealed[i]).length;
     }
 
     getPhase(): RiskRewardPhase {
         return this.phase;
+    }
+
+    /** What each grid slot shows: null while face-down, otherwise the flipped card. */
+    getCardFaces(): (RiskRewardCard | null)[] {
+        return this.deck.map((card, i) => (this.revealed[i] ? card : null));
+    }
+
+    /** True if the card at grid position `index` has been flipped. */
+    isRevealed(index: number): boolean {
+        return this.revealed[index] === true;
     }
 
     /** The correct value for each input, from the cards left and current chips. */
@@ -170,6 +184,27 @@ export class RiskRewardScreenModel {
             this.phase = "flipping";
         }
         return result;
+    }
+
+    /**
+     * Flips the card at grid position `index`. Only allowed in the "flipping"
+     * phase and on a card that hasn't been flipped. A Reward adds its value in
+     * chips and starts the next round; a Risk ends the game.
+     * @returns the revealed card, or null if the flip isn't allowed
+     */
+    flip(index: number): RiskRewardCard | null {
+        const card = this.deck[index];
+        if (this.phase !== "flipping" || card === undefined || this.revealed[index]) {
+            return null;
+        }
+        this.revealed[index] = true;
+        if (card.type === "reward") {
+            this.chips += card.value;
+            this.phase = "calculating";
+        } else {
+            this.phase = "lost";
+        }
+        return { ...card };
     }
 
     /** Chance the next flip is a Risk card, from the cards still in the deck. */

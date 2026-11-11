@@ -2,7 +2,7 @@ import Konva from "konva";
 import type { View } from "../../types.ts";
 import { STAGE_WIDTH, STAGE_HEIGHT, COLORS, RISK_REWARD_SCREEN_CONSTANTS } from "../../constants.ts";
 import { REWARD_VALUES } from "./RiskRewardScreenModel.ts";
-import type { CalcField, RiskRewardPhase } from "./RiskRewardScreenModel.ts";
+import type { CalcField, RiskRewardCard, RiskRewardPhase } from "./RiskRewardScreenModel.ts";
 
 export type { CalcField };
 
@@ -11,10 +11,12 @@ const c = RISK_REWARD_SCREEN_CONSTANTS;
 
 /** Everything the view needs to draw the current state of the minigame. */
 export interface RiskRewardViewState {
-    cardCount: number;   // total cards in the deck (one grid slot each)
-    riskCount: number;   // Risk cards in the deck
-    rewardCount: number; // Reward cards in the deck
-    rewardCounts: Record<number, number>; // Reward cards per chip value
+    // One entry per grid slot: null while face-down, otherwise what was flipped
+    cards: (RiskRewardCard | null)[];
+    cardCount: number;   // cards not yet flipped
+    riskCount: number;   // Risk cards not yet flipped
+    rewardCount: number; // Reward cards not yet flipped
+    rewardCounts: Record<number, number>; // face-down Reward cards per chip value
     chips: number;       // temporary minigame chips (separate from the total balance)
     phase: RiskRewardPhase;
     message: string;      // status line under the Submit button
@@ -26,6 +28,7 @@ export interface RiskRewardHandlers {
     onMenu: () => void;
     onInputChange: (field: CalcField, text: string) => void;
     onSubmit: () => void;
+    onFlip: (index: number) => void;
 }
 
 /** Color for the text under an input: format errors, "Correct" or "Not quite". */
@@ -406,7 +409,7 @@ export class RiskRewardScreenView implements View {
         // Starts just below the stats panel, so moving STATS_PANEL_Y moves
         // the grid too. Card width is whatever fits GRID_COLUMNS cards.
         const gridPanelY = c.STATS_PANEL_Y + statsPanelHeight + c.GRID_PANEL_GAP;
-        const rows = Math.ceil(stats.cardCount / c.GRID_COLUMNS);
+        const rows = Math.ceil(stats.cards.length / c.GRID_COLUMNS);
         const gridInnerWidth = c.LEFT_WIDTH - 2 * c.GRID_PADDING;
         const cardWidth = (gridInnerWidth - (c.GRID_COLUMNS - 1) * c.CARD_GAP) / c.GRID_COLUMNS;
         const gridPanelHeight =
@@ -425,20 +428,24 @@ export class RiskRewardScreenView implements View {
         }));
 
         // One card per deck slot, filled left to right, top to bottom.
-        // Cards are dimmed until all three answers are correct.
-        for (let i = 0; i < stats.cardCount; i++) {
+        // Face-down cards can only be clicked once the answers are correct.
+        stats.cards.forEach((face, i) => {
             const col = i % c.GRID_COLUMNS;
             const row = Math.floor(i / c.GRID_COLUMNS);
-            const card = this.createCard(
-                c.LEFT_X + c.GRID_PADDING + col * (cardWidth + c.CARD_GAP),
-                gridPanelY + c.GRID_PADDING + row * (c.CARD_HEIGHT + c.CARD_GAP),
-                cardWidth
-            );
-            if (stats.phase !== "flipping") {
+            const x = c.LEFT_X + c.GRID_PADDING + col * (cardWidth + c.CARD_GAP);
+            const y = gridPanelY + c.GRID_PADDING + row * (c.CARD_HEIGHT + c.CARD_GAP);
+            if (face !== null) {
+                this.content.add(this.createRevealedCard(x, y, cardWidth, face));
+                return;
+            }
+            const card = this.createCard(x, y, cardWidth);
+            if (stats.phase === "flipping") {
+                this.makeClickable(card, () => this.handlers.onFlip(i));
+            } else {
                 card.opacity(c.LOCKED_CARD_OPACITY);
             }
             this.content.add(card);
-        }
+        });
 
         this.group.getLayer()?.draw();
     }
@@ -478,6 +485,33 @@ export class RiskRewardScreenView implements View {
         label.x((width - textX) / 2);
         label.y((c.CARD_HEIGHT - c.CARD_FONT_SIZE) / 2);
         card.add(label);
+        return card;
+    }
+
+    /** A flipped card: "RISK" on pink or "REWARD +value" on green. */
+    private createRevealedCard(x: number, y: number, width: number, face: RiskRewardCard): Konva.Group {
+        const isRisk = face.type === "risk";
+        const card = new Konva.Group({ x, y });
+        card.add(new Konva.Rect({
+            width,
+            height: c.CARD_HEIGHT,
+            fill: isRisk ? c.REVEALED_RISK_FILL : c.REVEALED_REWARD_FILL,
+            stroke: isRisk ? c.RISK_COLOR : c.REWARD_COLOR,
+            strokeWidth: 3,
+            cornerRadius: c.RADIUS,
+        }));
+        card.add(new Konva.Text({
+            width,
+            height: c.CARD_HEIGHT,
+            align: "center",
+            verticalAlign: "middle",
+            text: face.type === "risk" ? "RISK" : `REWARD\n+${face.value}`,
+            lineHeight: 1.3,
+            fontSize: c.CARD_FONT_SIZE * 0.6,
+            fontFamily: "Arial",
+            fontStyle: "bold",
+            fill: isRisk ? c.RISK_COLOR : c.REWARD_COLOR,
+        }));
         return card;
     }
 

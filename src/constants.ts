@@ -251,6 +251,9 @@ export const RISK_REWARD_SCREEN_CONSTANTS = {
     CALC_PANEL_HEIGHT: H * 0.7,
     SUCCESS_COLOR: "#9be59f", // light green for "Correct" on the dark panel
     LOCKED_CARD_OPACITY: 0.75, // face-down cards while answers aren't correct yet
+    // Flipped card faces
+    REVEALED_RISK_FILL: "#f7d9dc",
+    REVEALED_REWARD_FILL: "#dcefd6",
 
     // Colors
     CARD_FILL: "#fffdf4", // cream, also used for stat boxes
