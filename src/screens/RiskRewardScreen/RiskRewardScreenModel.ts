@@ -1,3 +1,5 @@
+import { matchesAnswer, parseNumber, parseProbability } from "../../game/numberInput.ts";
+
 /** A single card in the Risk/Reward deck. A Reward adds `value` chips; a Risk loses them all. */
 export type RiskRewardCard = { type: "risk" } | { type: "reward"; value: number };
 
@@ -14,8 +16,18 @@ export const REWARD_VALUES = Object.keys(REWARD_CARD_VALUES).map(Number).sort((a
 
 export const REWARD_CARD_COUNT = Object.values(REWARD_CARD_VALUES).reduce((sum, n) => sum + n, 0);
 
+/**
+ * Where the player is in the current round:
+ * - "calculating": entering P(Risk), P(Reward) and expected value; cards locked
+ * - "flipping":    all three answers were correct; the cards are unlocked
+ */
+export type RiskRewardPhase = "calculating" | "flipping";
+
 /** The three values the player calculates before each flip. */
 export type CalcField = "risk" | "reward" | "expectedValue";
+
+/** Per-field result of checking the player's answers. */
+export type AnswerCheck = Record<CalcField, "correct" | "incorrect" | "invalid">;
 
 /**
  * Holds the state of one Risk/Reward minigame: the shuffled deck and the
@@ -27,6 +39,7 @@ export class RiskRewardScreenModel {
     private deck: RiskRewardCard[] = [];
     // Temporary chips won during this minigame (lost if a Risk card is flipped).
     private chips = 0;
+    private phase: RiskRewardPhase = "calculating";
 
     /**
      * @param random Source of randomness for shuffling. Defaults to Math.random;
@@ -43,6 +56,7 @@ export class RiskRewardScreenModel {
             this.random
         );
         this.chips = 0;
+        this.phase = "calculating";
     }
 
     /** Creates an unshuffled deck: RISK_CARD_COUNT Risk cards plus the REWARD_CARD_VALUES mix. */
@@ -118,6 +132,10 @@ export class RiskRewardScreenModel {
         return this.deck.filter((card) => card.type === type).length;
     }
 
+    getPhase(): RiskRewardPhase {
+        return this.phase;
+    }
+
     /** The correct value for each input, from the cards left and current chips. */
     getCorrectAnswers(): Record<CalcField, number> {
         return {
@@ -125,6 +143,33 @@ export class RiskRewardScreenModel {
             reward: this.getRewardProbability(),
             expectedValue: this.getExpectedValue(),
         };
+    }
+
+    /**
+     * Checks the player's typed answers. If all three are correct, cards
+     * unlock ("flipping" phase); otherwise they stay locked and the player
+     * can fix the wrong ones and submit again. Ignored outside "calculating".
+     */
+    checkAnswers(inputs: Record<CalcField, string>): AnswerCheck {
+        const correct = this.getCorrectAnswers();
+        const check = (field: CalcField): AnswerCheck[CalcField] => {
+            const parsed =
+                field === "expectedValue" ? parseNumber(inputs[field]) : parseProbability(inputs[field]);
+            if (!parsed.ok) return "invalid";
+            return matchesAnswer(parsed.value, correct[field]) ? "correct" : "incorrect";
+        };
+        const result: AnswerCheck = {
+            risk: check("risk"),
+            reward: check("reward"),
+            expectedValue: check("expectedValue"),
+        };
+        if (
+            this.phase === "calculating" &&
+            Object.values(result).every((value) => value === "correct")
+        ) {
+            this.phase = "flipping";
+        }
+        return result;
     }
 
     /** Chance the next flip is a Risk card, from the cards still in the deck. */

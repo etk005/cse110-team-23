@@ -242,7 +242,15 @@ export const RISK_REWARD_SCREEN_CONSTANTS = {
     CALC_ERROR_FONT_SIZE: H / 70,
     INPUT_FILL: "#f4efe6",
     ERROR_COLOR: "#ffb3b3", // light red so errors read on the dark panel
-    CALC_PANEL_HEIGHT: H / 8 + 3 * (H / 9) + H / 40,
+    // Below the three fields: Submit button, then a status message
+    // (and, later, the outcome buttons)
+    CALC_SUBMIT_Y: H / 8 + 3 * (H / 9) + H / 80,
+    CALC_BUTTON_HEIGHT: H / 18,
+    CALC_BUTTON_GAP: W / 80,
+    CALC_MESSAGE_FONT_SIZE: H / 48,
+    CALC_PANEL_HEIGHT: H * 0.7,
+    SUCCESS_COLOR: "#9be59f", // light green for "Correct" on the dark panel
+    LOCKED_CARD_OPACITY: 0.75, // face-down cards while answers aren't correct yet
 
     // Colors
     CARD_FILL: "#fffdf4", // cream, also used for stat boxes

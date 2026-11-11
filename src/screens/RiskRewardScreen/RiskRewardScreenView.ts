@@ -2,7 +2,7 @@ import Konva from "konva";
 import type { View } from "../../types.ts";
 import { STAGE_WIDTH, STAGE_HEIGHT, COLORS, RISK_REWARD_SCREEN_CONSTANTS } from "../../constants.ts";
 import { REWARD_VALUES } from "./RiskRewardScreenModel.ts";
-import type { CalcField } from "./RiskRewardScreenModel.ts";
+import type { CalcField, RiskRewardPhase } from "./RiskRewardScreenModel.ts";
 
 export type { CalcField };
 
@@ -15,14 +15,21 @@ export interface RiskRewardViewState {
     riskCount: number;   // Risk cards in the deck
     rewardCount: number; // Reward cards in the deck
     rewardCounts: Record<number, number>; // Reward cards per chip value
-    chips: number;       // temporary minigame chips
+    chips: number;       // temporary minigame chips (separate from the total balance)
+    phase: RiskRewardPhase;
+    message: string;      // status line under the Submit button
+    messageTone: "info" | "success" | "error";
 }
 
 /** What the screen's buttons and inputs do; wired up by the controller. */
 export interface RiskRewardHandlers {
     onMenu: () => void;
     onInputChange: (field: CalcField, text: string) => void;
+    onSubmit: () => void;
 }
+
+/** Color for the text under an input: format errors, "Correct" or "Not quite". */
+export type FeedbackTone = "error" | "success";
 
 const CALC_FIELDS: { field: CalcField; label: string; placeholder: string }[] = [
     { field: "risk", label: "P(Risk) on the next flip", placeholder: "e.g. 2/5 or 0.4" },
@@ -45,6 +52,8 @@ export class RiskRewardScreenView implements View {
     // Real <input> elements, placed over the canvas (Konva can't draw text boxes)
     private overlay: HTMLDivElement | null = null;
     private inputs = new Map<CalcField, HTMLInputElement>();
+    // Submit button, status message and outcome buttons; redrawn on every render()
+    private calcActions: Konva.Group;
 
     /** @param handlers What each button / input does (see RiskRewardHandlers) */
     constructor(private handlers: RiskRewardHandlers) {
@@ -67,7 +76,10 @@ export class RiskRewardScreenView implements View {
         this.group.add(this.content);
 
         // The calculations panel layout never changes; only the inputs' text does
-        this.group.add(this.createCalcPanel());
+        const calcPanel = this.createCalcPanel();
+        this.calcActions = new Konva.Group({ x: c.CALC_PADDING, y: c.CALC_SUBMIT_Y });
+        calcPanel.add(this.calcActions);
+        this.group.add(calcPanel);
     }
 
     /** Right-hand panel: title, short instructions and one labelled slot per input. */
@@ -169,6 +181,9 @@ export class RiskRewardScreenView implements View {
                 "outline: none",
             ].join(";");
             input.addEventListener("input", () => this.handlers.onInputChange(field, input.value));
+            input.addEventListener("keydown", (event) => {
+                if (event.key === "Enter") this.handlers.onSubmit();
+            });
             this.inputs.set(field, input);
             overlay.appendChild(input);
         });
@@ -197,14 +212,25 @@ export class RiskRewardScreenView implements View {
         this.overlay.style.transform = `scale(${stage.scaleX()})`;
     }
 
-    /** Shows an error under an input and turns its border red (null clears it). */
-    setFieldFeedback(field: CalcField, message: string | null): void {
-        this.errorTexts.get(field)?.text(message ?? "");
+    /** Shows a message under an input (null clears it); errors also turn its border red. */
+    setFieldFeedback(field: CalcField, message: string | null, tone: FeedbackTone = "error"): void {
+        const text = this.errorTexts.get(field);
+        text?.text(message ?? "");
+        text?.fill(tone === "success" ? c.SUCCESS_COLOR : c.ERROR_COLOR);
         const input = this.inputs.get(field);
         if (input) {
-            input.style.borderColor = message === null ? c.CARD_STROKE : c.RISK_COLOR;
+            input.style.borderColor =
+                message === null ? c.CARD_STROKE : tone === "success" ? c.REWARD_COLOR : c.RISK_COLOR;
         }
         this.group.getLayer()?.batchDraw();
+    }
+
+    /** Inputs can only be edited while the player is calculating. */
+    private setInputsEnabled(enabled: boolean): void {
+        for (const input of this.inputs.values()) {
+            input.readOnly = !enabled;
+            input.style.opacity = enabled ? "1" : "0.7";
+        }
     }
 
     /** Current text in each input (empty strings before the inputs exist). */
@@ -301,6 +327,8 @@ export class RiskRewardScreenView implements View {
      */
     render(stats: RiskRewardViewState): void {
         this.content.destroyChildren();
+        this.renderActions(stats);
+        this.setInputsEnabled(stats.phase === "calculating");
 
         // ---- Stats panel ----
         // Each entry is [label, value]; boxes fill left to right, wrapping
@@ -396,15 +424,20 @@ export class RiskRewardScreenView implements View {
             cornerRadius: c.PANEL_RADIUS,
         }));
 
-        // One card per deck slot, filled left to right, top to bottom
+        // One card per deck slot, filled left to right, top to bottom.
+        // Cards are dimmed until all three answers are correct.
         for (let i = 0; i < stats.cardCount; i++) {
             const col = i % c.GRID_COLUMNS;
             const row = Math.floor(i / c.GRID_COLUMNS);
-            this.content.add(this.createCard(
+            const card = this.createCard(
                 c.LEFT_X + c.GRID_PADDING + col * (cardWidth + c.CARD_GAP),
                 gridPanelY + c.GRID_PADDING + row * (c.CARD_HEIGHT + c.CARD_GAP),
                 cardWidth
-            ));
+            );
+            if (stats.phase !== "flipping") {
+                card.opacity(c.LOCKED_CARD_OPACITY);
+            }
+            this.content.add(card);
         }
 
         this.group.getLayer()?.draw();
@@ -446,6 +479,82 @@ export class RiskRewardScreenView implements View {
         label.y((c.CARD_HEIGHT - c.CARD_FONT_SIZE) / 2);
         card.add(label);
         return card;
+    }
+
+    /** Bottom of the calculations panel: Submit while calculating, then a status message. */
+    private renderActions(stats: RiskRewardViewState): void {
+        this.calcActions.destroyChildren();
+        const width = c.CALC_WIDTH - 2 * c.CALC_PADDING;
+        let y = 0;
+
+        if (stats.phase === "calculating") {
+            this.calcActions.add(this.createActionButton("Submit", 0, y, width, this.handlers.onSubmit));
+            y += c.CALC_BUTTON_HEIGHT + c.CALC_BUTTON_GAP;
+        }
+
+        if (stats.message) {
+            const toneColor = {
+                info: COLORS.text,
+                success: c.SUCCESS_COLOR,
+                error: c.ERROR_COLOR,
+            }[stats.messageTone];
+            const message = new Konva.Text({
+                y,
+                width,
+                text: stats.message,
+                fontSize: c.CALC_MESSAGE_FONT_SIZE,
+                fontFamily: "Arial",
+                fontStyle: "bold",
+                lineHeight: 1.3,
+                fill: toneColor,
+            });
+            this.calcActions.add(message);
+        }
+    }
+
+    /** Red filled button. */
+    private createActionButton(
+        label: string,
+        x: number,
+        y: number,
+        width: number,
+        onClick: () => void
+    ): Konva.Group {
+        const button = new Konva.Group({ x, y });
+        button.add(new Konva.Rect({
+            width,
+            height: c.CALC_BUTTON_HEIGHT,
+            fill: COLORS.button,
+            stroke: COLORS.buttonDark,
+            strokeWidth: c.MENU_BUTTON_STROKE,
+            cornerRadius: c.MENU_BUTTON_RADIUS,
+        }));
+        button.add(new Konva.Text({
+            width,
+            height: c.CALC_BUTTON_HEIGHT,
+            text: label,
+            fontSize: c.MENU_BUTTON_FONT_SIZE,
+            fontFamily: "Arial",
+            fontStyle: "bold",
+            fill: COLORS.text,
+            align: "center",
+            verticalAlign: "middle",
+        }));
+        this.makeClickable(button, onClick);
+        return button;
+    }
+
+    /** Click handler plus a pointer cursor on hover. */
+    private makeClickable(node: Konva.Group, onClick: () => void): void {
+        node.on("click tap", onClick);
+        node.on("mouseenter", () => {
+            const stage = node.getStage();
+            if (stage) stage.container().style.cursor = "pointer";
+        });
+        node.on("mouseleave", () => {
+            const stage = node.getStage();
+            if (stage) stage.container().style.cursor = "default";
+        });
     }
 
     /** Makes the screen visible and redraws the layer. */
