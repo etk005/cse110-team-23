@@ -182,7 +182,7 @@ export const RESULTS_SCREEN_CONSTANTS = {
     BUTTON_FONT_SIZE: H / 33,
 };
 
-// Left column holds the title, stats panel and card grid (right side is left free)
+// Left column holds the stats panel and card grid; the calculations panel sits to its right
 const RR_LEFT_X = W / 36;
 const RR_LEFT_WIDTH = W * 0.57;
 
@@ -226,6 +226,23 @@ export const RISK_REWARD_SCREEN_CONSTANTS = {
     MENU_BUTTON_RADIUS: GAME_SCREEN_CONSTANTS.BUTTON_RADIUS,
     MENU_BUTTON_STROKE: GAME_SCREEN_CONSTANTS.BUTTON_STROKE,
     MENU_BUTTON_MARGIN: W / 40, // distance from the right and bottom edges
+
+    // Calculations panel (right column, beside the stats panel and grid)
+    CALC_X: RR_LEFT_X + RR_LEFT_WIDTH + W / 40,
+    CALC_WIDTH: W - (RR_LEFT_X + RR_LEFT_WIDTH + W / 40) - RR_LEFT_X,
+    CALC_PADDING: W / 60,
+    CALC_TITLE_FONT_SIZE: H / 30,
+    CALC_HINT_FONT_SIZE: H / 60,
+    CALC_LABEL_FONT_SIZE: H / 50,
+    CALC_FIELD_TOP: H / 8, // first field, measured from the panel top
+    CALC_FIELD_GAP: H / 9, // distance from one field to the next
+    CALC_INPUT_Y: H / 30, // input box, below its label
+    CALC_INPUT_HEIGHT: H / 18,
+    CALC_INPUT_FONT_SIZE: H / 43,
+    CALC_ERROR_FONT_SIZE: H / 70,
+    INPUT_FILL: "#f4efe6",
+    ERROR_COLOR: "#ffb3b3", // light red so errors read on the dark panel
+    CALC_PANEL_HEIGHT: H / 8 + 3 * (H / 9) + H / 40,
 
     // Colors
     CARD_FILL: "#fffdf4", // cream, also used for stat boxes
