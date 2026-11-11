@@ -12,17 +12,21 @@ export type Level = z.infer<typeof levelSchema>;
 
 export type LevelManifest = z.infer<typeof levelManifestSchema>;
 
-// for clues revealed to the player about the hidden card
-export interface KnownInformation {
-  id: string;
-  description: string;
+// a rule a card either matches or not, shared by clues and questions
+export interface CardCondition {
   property: "suit" | "rank" | "color" | "parity" | "category";
   operator: "equals" | "not_equals" | "less_than" | "greater_than";
   value: string;
 }
 
-// current probability question
-export interface ProbabilityQuestion {
+// for clues revealed to the player about the hidden card
+export interface KnownInformation extends CardCondition {
+  id: string;
+  description: string;
+}
+
+// current probability question: the chance the hidden card matches the condition
+export interface ProbabilityQuestion extends CardCondition {
   id: string;
   text: string;
   answerType: "fraction" | "decimal";

@@ -1,4 +1,4 @@
-import type { Card, KnownInformation, Rank, Suit } from "../shared/types";
+import type { Card, CardCondition, Rank, Suit } from "../shared/types";
 
 // ace is low
 export const RANK_VALUES: Record<Rank, number> = {
@@ -37,7 +37,7 @@ export function categoryOf(rank: Rank): "ace" | "number" | "face" {
 
 function rankMatches(
   cardRank: Rank,
-  operator: KnownInformation["operator"],
+  operator: CardCondition["operator"],
   value: string,
 ): boolean {
   const cardValue = RANK_VALUES[cardRank];
@@ -61,10 +61,10 @@ function rankMatches(
   }
 }
 
-// whether a card satisfies a clue
+// whether a card satisfies a clue (or a question's condition)
 export function matchesInformation(
   card: Card,
-  info: KnownInformation,
+  info: CardCondition,
 ): boolean {
   const { property, operator, value } = info;
   const equals = operator === "equals";
