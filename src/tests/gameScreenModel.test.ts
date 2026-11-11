@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { Level } from "../shared/types.ts";
 import { GameScreenModel } from "../screens/GameScreen/GameScreenModel.ts";
 import { COST_OF_CLUE, STARTING_CHIPS } from "../constants.ts";
+import { getRemainingPossibleCards } from "../cardFilter.ts";
 
 const level1: Level = {
     id: 1,
@@ -24,7 +25,7 @@ describe("GameScreenModel", () => {
     let model: GameScreenModel;
 
     beforeEach(() => {
-        model = new GameScreenModel();
+        model = new GameScreenModel(() => 0);
         model.setLevel(level1);
     });
 
@@ -64,19 +65,19 @@ describe("GameScreenModel", () => {
             expect(model.getState().currentQuestion).not.toBeNull();
         });
 
-        it("starts with the original mock known information", () => {
+        it("starts with a useful clue about the hidden card", () => {
             expect(model.getState().knownInformation).toEqual([
                 {
-                    id: "info-1",
-                    description: "The hidden card is a heart.",
-                    property: "suit",
+                    id: "color-red",
+                    description: "The hidden card is red.",
+                    property: "color",
                     operator: "equals",
-                    value: "hearts",
+                    value: "red",
                 },
             ]);
         });
 
-        it("keeps only hearts possible to match the mock known information", () => {
+        it("keeps only cards matching the initial clue", () => {
             const state = model.getState();
 
             expect(state.remainingPossibleCards.map((card) => card.id)).toEqual(
@@ -215,16 +216,39 @@ describe("GameScreenModel", () => {
             }
         });
 
-        it("keeps known information and possible cards unchanged on Next Question", () => {
+        it.each(level1.deck)("reveals useful clues for $id as questions advance", (hiddenCard) => {
+            const index = level1.deck.indexOf(hiddenCard);
+            const seeded = new GameScreenModel(() => index / level1.deck.length);
+            seeded.setLevel(level1);
+
+            for (let question = 1; question < level1.questionsRequired; question++) {
+                const before = structuredClone(seeded.getState());
+                seeded.submitAnswer(String(seeded.getCorrectAnswer()));
+                // Feedback still reflects the clues used to answer this question.
+                expect(seeded.getState().knownInformation).toEqual(before.knownInformation);
+                seeded.nextQuestion();
+
+                const state = seeded.getState();
+                expect(state.knownInformation).toHaveLength(before.knownInformation.length + 1);
+                expect(state.knownInformation.slice(0, -1)).toEqual(before.knownInformation);
+                expect(state.remainingPossibleCards.length).toBeLessThan(before.remainingPossibleCards.length);
+                expect(state.remainingPossibleCards).toContainEqual(hiddenCard);
+                expect(state.remainingPossibleCards).toEqual(
+                    getRemainingPossibleCards(state.deck, state.knownInformation)
+                );
+                expect(seeded.getChips()).toBe(STARTING_CHIPS);
+            }
+        });
+
+        it("does not add redundant clues once only the hidden card remains", () => {
+            model.setLevel({ ...level1, deck: [level1.deck[0]!] });
             const before = structuredClone(model.getState());
 
             model.submitAnswer(correctAnswer());
             model.nextQuestion();
 
-            const state = model.getState();
-
-            expect(state.knownInformation).toEqual(before.knownInformation);
-            expect(state.remainingPossibleCards).toEqual(before.remainingPossibleCards);
+            expect(model.getState().knownInformation).toEqual(before.knownInformation);
+            expect(model.getState().remainingPossibleCards).toEqual(before.remainingPossibleCards);
         });
 
         it("prevents repeated Next Question clicks from skipping", () => {
@@ -232,10 +256,12 @@ describe("GameScreenModel", () => {
             model.nextQuestion();
 
             const question = model.getState().currentQuestion;
+            const clues = structuredClone(model.getState().knownInformation);
 
             model.nextQuestion();
 
             expect(model.getState().currentQuestion).toEqual(question);
+            expect(model.getState().knownInformation).toEqual(clues);
         });
     });
 
