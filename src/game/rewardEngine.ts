@@ -1,37 +1,42 @@
-import type { Card, KnownInformation } from "../shared/types";
-import { matchesInformation } from "./informationMatching";
+// Let's construct a reward function subject to the following conditions:
+// 
+//   - The expected net reward must be a fixed non-negative constant b
+//   - The reward must be non-increasing with the number of guesses
+//   - The cost per guess must be a fixed constant m
+//   - The reward must be non-negative
+//   - Duplicate guesses should be penalized
+//   - Guesses inconsistent with the existing information should be penalized
+//
+// Let EV_i be the expected net reward at guess i,
+//     R_i be the reward at guess i,
+//     n be the number of candidate guesses.
+//
+// Given that there's a fixed cost of m chips per guess, a probability of \frac{1}{n} of correctly guessing the
+// hidden card with a non-degenerate guess and a probability of \frac{n-1}{n} of otherwise continuing to the
+// (i+1)th guess, we can model EV_i as follows:
+//
+//   EV_i = -m + \frac{1}{n}R_i + \frac{n-1}{n}EV_{i+1}
+//
+// Given that expected reward is a constant b, solving for R_i:
+//
+//   EV_i = -m + \frac{1}{n}R_i + \frac{n-1}{n}EV_{i+1}
+//   b = -m + \frac{1}{n}R_i + \frac{n-1}{n}b
+//   \frac{1}{n}b = -m + \frac{1}{n}R_i
+//   b = -nm + R_i
+//   R_i = b + nm
+//
+// Checking the conditions:
+// 
+//   - Given that the number of candidate guesses n is non-increasing w.r.t. guess index, the reward must be
+//     non-increasing with the number of guesses
+//   - Given that the number of candidate guesses n is strictly positive prior to making a guess, the reward must
+//     also be non-negative
+//   - Given that duplicate and inconsistent guesses have a probability of 0 (not \frac{1}{n} as assumed in our
+//     model) of correctly guessing the hidden card, R_i = 0 in this case, naturally lowering the expected reward
 
-// I'm designing the reward engine to give a net reward of:
-//
-//   (EV(# of guesses required) - ((# of guesses used) - (# of guesses "wasted" upon receiving new information))) * m + b
-//
-// In simple terms, (EV(# of guesses required) - (# of guesses used)) makes it so that you gain more chips when you
-// do better than expected and less when you do worse. A key component of this is that raw guessing averages this
-// term out to 0.
-//
-// (# of guesses "wasted" upon receiving new information) "gives back guesses" that turned out to be redundant in
-// the end. This effectively makes ((# of guesses used) - (# of guesses "wasted" upon receiving new information))
-// mean the number of guesses that, in the end, narrowed down the possible cards for your final guess.
-//
-// The m constant serves to scale the reward with the user's performance and b is a fixed reward so the user is
-// guaranteed to earn at least a little bit per level on average.
-//
-// For user experience, I make each guess worth m chips. This makes it so that, while the net reward can be negative
-// (for guessing too much), the reward the user gets after guessing correctly is always positive:
-//
-//   (EV(# of guesses required) + (# of guesses "wasted" upon receiving new information)) * m + b
-//
-// To actually implement the formula, the math is easy since EV(# of guesses required) is just half the number of
-// remaining cards and (# of guesses "wasted" upon receiving new information) is the number of guesses that are
-// consistent with the known information. Additionally, to penalize guessing the same card twice, we only count the
-// unique guesses here.
+export const CHIPS_PER_GUESS = 20;  // m
+export const EXPECTED_REWARD = 10;  // b
 
-const CHIPS_PER_GUESS = 20;  // m
-const BASELINE_REWARD = 10;  // b
-
-export function calculateReward(remainingPossibleCards: Card[], knownInformation: KnownInformation[], guesses: Card[]) {
-    const evNumGuessesRequired = remainingPossibleCards.length / 2;
-    const uniqueGuesses = Object.values(Object.fromEntries(guesses.map(card => [card.id, card])));
-    const numGuessesWasted = uniqueGuesses.reduce((accum, card) => accum + (knownInformation.find(info => matchesInformation(card, info)) ? 1 : 0), 0);
-    return (evNumGuessesRequired + numGuessesWasted) * CHIPS_PER_GUESS + BASELINE_REWARD;
+export function calculateReward(numCandidateGuesses: number) {
+    return EXPECTED_REWARD + numCandidateGuesses * CHIPS_PER_GUESS;
 }
