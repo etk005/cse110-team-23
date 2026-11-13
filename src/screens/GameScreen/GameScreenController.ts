@@ -1,4 +1,4 @@
-import type { HintKind, Level } from "../../shared/types.ts";
+import type { Card, HintKind, Level } from "../../shared/types.ts";
 import { ScreenController } from "../../types.ts";
 import type { ScreenSwitcher } from "../../types.ts";
 import { GameScreenModel } from "./GameScreenModel.ts";
@@ -23,7 +23,8 @@ export class GameScreenController extends ScreenController {
             () => this.screenSwitcher.switchToScreen({ type: "menu" }),
             () => this.handleNext(),
             () => this.handleBuyInfo(),
-            (kind) => this.handleChooseHint(kind)
+            (kind) => this.handleChooseHint(kind),
+            (guess) => this.handleGuess(guess)
         );
     }
 
@@ -125,5 +126,9 @@ export class GameScreenController extends ScreenController {
 
     getView(): GameScreenView {
         return this.view;
+    }
+
+    private handleGuess(card: Card) {
+        this.model.guessCard(card);
     }
 }

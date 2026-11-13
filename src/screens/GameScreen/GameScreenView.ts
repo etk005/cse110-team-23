@@ -64,6 +64,7 @@ export class GameScreenView implements View {
         onNext: () => void,
         onBuyInfo: () => void,
         onChooseHint: (kind: HintKind) => void,
+        private onGuess: (card: Card) => void,
     ) {
         this.group = new Konva.Group({ visible: false });
         this.onAnswer = onAnswer;

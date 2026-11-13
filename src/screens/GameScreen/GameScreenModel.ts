@@ -8,6 +8,7 @@ import type {
 import { getRemainingPossibleCards } from "../../cardFilter.ts";
 import { getNextInformation } from "../../game/informationEngine.ts";
 import { STARTING_CHIPS, COST_OF_CLUE } from "../../constants.ts";
+import { calculateReward, CHIPS_PER_GUESS } from "../../game/rewardEngine.ts";
 
 const questions: ProbabilityQuestion[] = [
     {
@@ -57,7 +58,8 @@ export class GameScreenModel {
             "chips": this.chips,
             "choosingHint": false,
             "canViewRemainingCards": false,
-            "probabilityRange": null
+            "probabilityRange": null,
+            "incorrectlyGuessedCards": []
         };
         this.level = null;
     }
@@ -82,7 +84,8 @@ export class GameScreenModel {
             chips: this.chips,
             choosingHint: false,
             canViewRemainingCards: false,
-            probabilityRange: null
+            probabilityRange: null,
+            incorrectlyGuessedCards: []
         };
 
         this.revealNextClue(state);
@@ -312,5 +315,30 @@ export class GameScreenModel {
         }
         // Include a probability of exactly 1 in the last band.
         return buckets[buckets.length - 1] ?? { low: 0, high: 1 };
+    }
+
+    guessCard(card: Card): boolean {
+        if (this.state.status !== "playing") return false;
+        
+        if (this.chips < CHIPS_PER_GUESS) return false;
+        this.chips -= CHIPS_PER_GUESS;
+        this.state.chips = this.chips;
+
+        if (card.id === this.hiddenCard!.id) {
+            this.state.status = "won";
+            this.state.hiddenCard.isRevealed = true;
+            this.chips += this.getReward();
+            this.state.chips = this.chips;
+            return true;
+        }
+
+        this.state.incorrectlyGuessedCards.push(card);
+        return false;
+    }
+
+    getReward(): number {
+        const remainingPossibleCardIds = this.state.remainingPossibleCards.map(card => card.id);
+        const incorrectlyGuessedCardIds = this.state.incorrectlyGuessedCards.map(card => card.id);
+        return calculateReward(new Set(remainingPossibleCardIds).difference(new Set(incorrectlyGuessedCardIds)).size);
     }
 }

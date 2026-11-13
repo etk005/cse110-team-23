@@ -66,6 +66,9 @@ export interface GameState {
   canViewRemainingCards: boolean;
   // paid hint: band around the current question's true probability
   probabilityRange: { low: number; high: number } | null;
+
+  // cards that have been guessed incorrectly
+  incorrectlyGuessedCards: Card[];
 }
 
 export type HintKind = "cards" | "range";
