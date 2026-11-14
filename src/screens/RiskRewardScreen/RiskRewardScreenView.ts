@@ -27,7 +27,7 @@ export interface RiskRewardHandlers {
 const CALC_FIELDS: { field: CalcField; label: string; placeholder: string }[] = [
     { field: "risk", label: "P(Risk) on the next flip", placeholder: "e.g. 2/5 or 0.4" },
     { field: "reward", label: "P(Reward) on the next flip", placeholder: "e.g. 4/5 or 0.8" },
-    { field: "expectedValue", label: "Expected chip gain/loss from the next flip", placeholder: "e.g. 4/3 or 1.33" },
+    { field: "expectedValue", label: "Expected chip gain/loss from the next flip", placeholder: "e.g. 7/3 or 2.33" },
 ];
 
 /**
