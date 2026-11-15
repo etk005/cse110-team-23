@@ -25,7 +25,7 @@ export class SignIn extends Konva.Group {
         this.add(card);
 
         const email = new EditableText({
-            text: "email",
+            text: "email@email.com",
             fontSize: 30,
             offsetX: -10,
             offsetY: -10,

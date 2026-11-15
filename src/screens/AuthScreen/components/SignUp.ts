@@ -9,7 +9,7 @@ export type SignUpConfig = Konva.GroupConfig & {
 
 export class SignUp extends Konva.Group {
     private errorText: Konva.Text;
-    
+
     constructor({ onSignUp, onSwitchToSignIn, ...options }: SignUpConfig = {}) {
         super({
             ...options,
@@ -25,7 +25,7 @@ export class SignUp extends Konva.Group {
         this.add(card);
 
         const email = new EditableText({
-            text: "email",
+            text: "email@email.com",
             fontSize: 30,
             offsetX: -10,
             offsetY: -10,
