@@ -24,6 +24,7 @@ export class AuthScreenView implements View {
             visible: false,
             onSignIn,
             onSwitchToSignUp: () => {
+                this.setError("");
                 this.signIn.hide();
                 this.signUp.show();
             }
@@ -32,6 +33,7 @@ export class AuthScreenView implements View {
             visible: false,
             onSignUp,
             onSwitchToSignIn: () => {
+                this.setError("");
                 this.signUp.hide();
                 this.signIn.show();
             }
@@ -51,5 +53,11 @@ export class AuthScreenView implements View {
 
     getGroup(): Konva.Group {
         return this.group;
+    }
+
+    // TODO: figure out a better way to propagate errors
+    setError(error: string): void {
+        this.signIn.setError(error);
+        this.signUp.setError(error);
     }
 }

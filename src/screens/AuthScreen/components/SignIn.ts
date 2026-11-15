@@ -8,6 +8,8 @@ export type SignInConfig = Konva.GroupConfig & {
 };
 
 export class SignIn extends Konva.Group {
+    private errorText: Konva.Text;
+
     constructor({ onSignIn, onSwitchToSignUp, ...options }: SignInConfig = {}) {
         super({
             ...options,
@@ -26,7 +28,8 @@ export class SignIn extends Konva.Group {
             text: "email",
             fontSize: 30,
             offsetX: -10,
-            offsetY: -10
+            offsetY: -10,
+            width: 300
         });
         this.add(email);
 
@@ -34,7 +37,8 @@ export class SignIn extends Konva.Group {
             text: "password",
             fontSize: 30,
             offsetX: -10,
-            offsetY: -60
+            offsetY: -60,
+            width: 300
         });
         this.add(password);
 
@@ -83,5 +87,17 @@ export class SignIn extends Konva.Group {
             fontSize: 30
         });
         switchGroup.add(switchText);
+
+        this.errorText = new Konva.Text({
+            fontSize: 20,
+            fill: "red",
+            offsetX: -10,
+            offsetY: -160
+        });
+        this.add(this.errorText);
+    }
+
+    setError(error: string) {
+        this.errorText.text(error);
     }
 }
