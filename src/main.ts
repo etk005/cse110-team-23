@@ -10,6 +10,7 @@ import { LoadingScreenController } from "./screens/LoadingScreen/LoadingScreenCo
 import { PlayerResources } from "./game/playerResources.ts";
 import { RiskRewardScreenController } from "./screens/RiskRewardScreen/RiskRewardScreenController.ts";
 import { AuthScreenController } from "./screens/AuthScreen/AuthScreenController.ts";
+import { supabase } from "./lib/supabase.ts";
 
 // Main application class that manages the screens and navigation
 class App implements ScreenSwitcher {
@@ -64,7 +65,17 @@ class App implements ScreenSwitcher {
 
         this.layer.draw();
         this.fitStageToViewport();
-        this.authController.show();
+        this.switchToScreen({
+            type: "loading",
+            loader: async () => {
+                const result = await supabase.auth.getUser();
+                if (result.data.user === null) {
+                    return { type: "auth" };
+                } else {
+                    return { type: "menu" };
+                }
+            }
+        })
     }
 
     // Scale the 1920x1080 stage to fit the browser window, keeping its shape
