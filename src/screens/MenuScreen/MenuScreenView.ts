@@ -10,7 +10,7 @@ export class MenuScreenView implements View {
      * @param onRiskRewardClick Called when RISK / REWARD is clicked
      */
     constructor(onStartClick: () => void, onRiskRewardClick: () => void) {
-        this.group = new Konva.Group({ visible: true });
+        this.group = new Konva.Group({ visible: false });
         const c = MENU_SCREEN_CONSTANTS;
 
         const title = new Konva.Text({

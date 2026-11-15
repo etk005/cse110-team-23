@@ -9,6 +9,7 @@ import { LevelsScreenController } from "./screens/LevelsScreen/LevelsScreenContr
 import { LoadingScreenController } from "./screens/LoadingScreen/LoadingScreenController.ts";
 import { PlayerResources } from "./game/playerResources.ts";
 import { RiskRewardScreenController } from "./screens/RiskRewardScreen/RiskRewardScreenController.ts";
+import { AuthScreenController } from "./screens/AuthScreen/AuthScreenController.ts";
 
 // Main application class that manages the screens and navigation
 class App implements ScreenSwitcher {
@@ -21,6 +22,7 @@ class App implements ScreenSwitcher {
     private levelsController: LevelsScreenController;
     private loadingController: LoadingScreenController;
     private riskRewardController: RiskRewardScreenController;
+    private authController: AuthScreenController;
 
     constructor(container: string) {
         // Draw at the screen's real pixel density so it's sharp on retina displays
@@ -47,6 +49,7 @@ class App implements ScreenSwitcher {
         this.levelsController = new LevelsScreenController(this);
         this.loadingController = new LoadingScreenController(this);
         this.riskRewardController = new RiskRewardScreenController(this, resources);
+        this.authController = new AuthScreenController(this);
 
         // Add all screen views to the same layer
         this.layer.add(this.menuController.getView().getGroup());
@@ -55,12 +58,13 @@ class App implements ScreenSwitcher {
         this.layer.add(this.levelsController.getView().getGroup());
         this.layer.add(this.loadingController.getView().getGroup());
         this.layer.add(this.riskRewardController.getView().getGroup());
+        this.layer.add(this.authController.getView().getGroup());
 
         window.addEventListener("resize", () => this.fitStageToViewport());
 
         this.layer.draw();
         this.fitStageToViewport();
-        this.menuController.show();
+        this.authController.show();
     }
 
     // Scale the 1920x1080 stage to fit the browser window, keeping its shape
@@ -91,6 +95,7 @@ class App implements ScreenSwitcher {
         this.levelsController.hide();
         this.loadingController.hide();
         this.riskRewardController.hide();
+        this.authController.hide();
 
         switch (screen.type) {
             case "menu":
@@ -123,6 +128,10 @@ class App implements ScreenSwitcher {
 
             case "loading":
                 this.loadingController.wait(screen.loader);
+                break;
+
+            case "auth":
+                this.authController.show();
                 break;
         }
     }
