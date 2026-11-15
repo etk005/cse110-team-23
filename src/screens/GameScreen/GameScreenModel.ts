@@ -1,31 +1,17 @@
 import type {
     GameState,
     Card,
-    ProbabilityQuestion,
     Level,
     HintKind
 } from "../../shared/types.ts";
-import { getRemainingPossibleCards } from "../../cardFilter.ts";
 import { getNextInformation } from "../../game/informationEngine.ts";
-import { STARTING_CHIPS, COST_OF_CLUE } from "../../constants.ts";
+import { generateQuestion, probabilityOf } from "../../game/questionGenerator.ts";
+import { getRemainingPossibleCards } from "../../cardFilter.ts";
 
-const questions: ProbabilityQuestion[] = [
-    {
-        id: "question-1",
-        text: "What is the probability that the hidden card is an Ace?",
-        answerType: "fraction",
-    },
-    {
-        id: "question-2",
-        text: "What is the probability that the hidden card is a spade?",
-        answerType: "fraction",
-    },
-    {
-        id: "question-3",
-        text: "What is the probability that the hidden card is red?",
-        answerType: "fraction",
-    },
-];
+
+// how far a typed answer can be from the exact probability and still count,
+// so a decimal rounded to 2 places (like 0.33 for 1/3) is accepted
+const ANSWER_TOLERANCE = 0.005;
 
 /**
  * Manages game state for an active level.
@@ -35,7 +21,8 @@ export class GameScreenModel {
     private waitingForNext = false;
     private level: Level | null;
     private hiddenCard: Card | null = null;
-    private chips = STARTING_CHIPS;
+    // ids of questions already asked this level, so none repeat
+    private askedQuestionIds = new Set<string>();
 
     /** Accepts a random source so hidden-card selection can be tested deterministically. */
     constructor(private random: () => number = Math.random) {
@@ -54,7 +41,6 @@ export class GameScreenModel {
             "remainingPossibleCards": [],
             "status": "playing",
             "strikes": 0,
-            "chips": this.chips,
             "choosingHint": false,
             "canViewRemainingCards": false,
             "probabilityRange": null
@@ -65,9 +51,10 @@ export class GameScreenModel {
     private initGameStateFromLevel(level: Level): GameState {
         const index = Math.floor(this.random() * level.deck.length);
         this.hiddenCard = level.deck[index] ?? null;
+        this.askedQuestionIds.clear();
 
         const state: GameState = {
-            currentQuestion: questions[0] ?? null,
+            currentQuestion: null,
             deck: level.deck,
             gameId: crypto.randomUUID(),
             hiddenCard: { isRevealed: false },
@@ -79,17 +66,36 @@ export class GameScreenModel {
             remainingPossibleCards: level.deck,
             status: "playing",
             strikes: 0,
-            chips: this.chips,
             choosingHint: false,
             canViewRemainingCards: false,
             probabilityRange: null
         };
 
         this.revealNextClue(state);
+        this.askNextQuestion(state);
         return state;
     }
 
-    /** Adds a useful clue about the hidden card and narrows the possible cards. */
+    /** Picks a new question about the cards that are still possible. */
+    private askNextQuestion(state: GameState): void {
+        const question = generateQuestion(
+            state.deck,
+            state.remainingPossibleCards,
+            this.askedQuestionIds,
+            this.random
+        );
+
+        if (question !== null) {
+            this.askedQuestionIds.add(question.id);
+        }
+
+        state.currentQuestion = question;
+    }
+
+    /**
+     * Adds the next useful clue about the hidden card (if any) and
+     * narrows the remaining possible cards to match all known clues.
+     */
     private revealNextClue(state: GameState): void {
         if (this.hiddenCard === null) {
             return;
@@ -142,36 +148,15 @@ export class GameScreenModel {
         return this.waitingForNext;
     }
 
-    private matchesQuestion(card: Card, questionId: string): boolean {
-        switch (questionId) {
-            case "question-1":
-                return card.rank === "A";
-
-            case "question-2":
-                return card.suit === "spades";
-
-            case "question-3":
-                return card.suit === "hearts" || card.suit === "diamonds";
-
-            default:
-                return false;
-        }
-    }
-
     /** Returns the probability (0–1) that the hidden card satisfies the current question. */
     getCorrectAnswer(): number {
         const question = this.state.currentQuestion;
-        const cards = this.state.remainingPossibleCards;
 
-        if (!question || cards.length === 0) {
+        if (!question) {
             return 0;
         }
 
-        const matchingCards = cards.filter((card) =>
-            this.matchesQuestion(card, question.id)
-        );
-
-        return matchingCards.length / cards.length;
+        return probabilityOf(question, this.state.remainingPossibleCards);
     }
 
     /**
@@ -192,7 +177,8 @@ export class GameScreenModel {
             ? Number(parts[0]) / Number(parts[1])
             : Number(answer);
 
-        const correct = numericAnswer === this.getCorrectAnswer();
+        const correct =
+            Math.abs(numericAnswer - this.getCorrectAnswer()) <= ANSWER_TOLERANCE;
 
         if (correct) {
             this.state.questionsAnswered++;
@@ -220,42 +206,15 @@ export class GameScreenModel {
 
         this.waitingForNext = false;
         this.revealNextClue(this.state);
-        const nextIndex = this.state.questionsAnswered;
-        this.state.currentQuestion = questions[nextIndex] ?? null;
+        this.askNextQuestion(this.state);
         this.state.probabilityRange = null;
         this.state.choosingHint = false;
     }
-    /**Returns true if this.state.chips >= COST_OF_CLUE */
-    hasEnoughChips(): boolean { 
-        return this.chips >= COST_OF_CLUE;
-    }
-    /**Subtracts COST_OF_CLUE from this.state.chips */
-    subtractChips(): void{
-        if (this.chips < COST_OF_CLUE) {
-            throw new Error("Cannot subtract negative chips");
-        }
-        this.chips -= COST_OF_CLUE;
-        this.state.chips = this.chips;
-    }
-    /**Adds COST_OF_CLUE to this.state.chips */
-    addChips(amount: number): void{
-        if (amount < 0) {
-            throw new Error("Cannot add negative chips");
-        }
-        this.chips += amount;
-        this.state.chips = this.chips;
-    }
-    /**Returns the number of chips that the player currently has */
-    getChips(): number{
-        return this.chips;
-    }
+
     /**
-     * Opens the paid-hint picker. Does not spend chips or add card facts.
+     * Opens the hint picker without charging coins or adding card facts.
      */
-    openHintMenu(): "opened" | "not enough chips" | "already_bought" {
-        if (!this.hasEnoughChips()) {
-            return "not enough chips";
-        }
+    openHintMenu(): "opened" | "already_bought" {
         if (this.state.canViewRemainingCards && this.state.probabilityRange !== null) {
             return "already_bought";
         }
@@ -264,21 +223,17 @@ export class GameScreenModel {
     }
 
     /**
-     * Spends chips on the chosen hint: remaining cards, or a probability
-     * range containing the true answer. Does not add card facts.
+     * Unlocks the selected hint after the controller charges the shared coins.
+     * Reveals remaining cards or a probability range without adding card facts.
      */
-    buyHint(kind: HintKind): "bought" | "not enough chips" | "already_bought" {
-        if (!this.hasEnoughChips()) {
-            this.state.choosingHint = false;
-            return "not enough chips";
-        }
+    buyHint(kind: HintKind): "bought" | "already_bought" {
 
         if (kind === "cards") {
             if (this.state.canViewRemainingCards) {
                 this.state.choosingHint = false;
                 return "already_bought";
             }
-            this.subtractChips();
+
             this.state.canViewRemainingCards = true;
             this.state.choosingHint = false;
             return "bought";
@@ -289,7 +244,6 @@ export class GameScreenModel {
             return "already_bought";
         }
 
-        this.subtractChips();
         this.state.probabilityRange = this.buildProbabilityRange(
             this.getCorrectAnswer()
         );

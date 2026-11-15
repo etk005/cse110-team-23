@@ -10,7 +10,7 @@ import {
 
 const c = RESULTS_SCREEN_CONSTANTS;
 
-/** Renders the end-of-level screen with title, score, and Play Again / Main Menu buttons. */
+/** Renders the end-of-level screen with title, points, totals, and Play Again / Main Menu buttons. */
 export class ResultsScreenView implements View {
     private group: Konva.Group;
 
@@ -29,7 +29,7 @@ export class ResultsScreenView implements View {
         this.addButton("Main Menu", c.MENU_X, c.BUTTON_Y, onMenu);
     }
 
-    render(score: number, won: boolean): void {
+    render(points: number, won: boolean, totalScore: number, coins: number): void {
         this.group.find(".resultText").forEach((node) => node.destroy());
 
         const title = new Konva.Text({
@@ -49,14 +49,26 @@ export class ResultsScreenView implements View {
             x: c.TEXT_X,
             y: c.SCORE_Y,
             width: c.TEXT_WIDTH,
-            text: `Questions Answered: ${score}/3`,
+            text: `Points this level: ${points}`,
             fontSize: c.SCORE_FONT_SIZE,
             fontFamily: "Arial",
             fill: COLORS.text,
             align: "center",
         });
 
-        this.group.add(title, scoreText);
+        const totalsText = new Konva.Text({
+            name: "resultText",
+            x: c.TEXT_X,
+            y: c.TOTALS_Y,
+            width: c.TEXT_WIDTH,
+            text: `Total score: ${totalScore}    Coins: ${coins}`,
+            fontSize: c.TOTALS_FONT_SIZE,
+            fontFamily: "Arial",
+            fill: COLORS.text,
+            align: "center",
+        });
+
+        this.group.add(title, scoreText, totalsText);
         this.group.getLayer()?.draw();
     }
 

@@ -12,17 +12,21 @@ export type Level = z.infer<typeof levelSchema>;
 
 export type LevelManifest = z.infer<typeof levelManifestSchema>;
 
-// for clues revealed to the player about the hidden card
-export interface KnownInformation {
-  id: string;
-  description: string;
+// a rule a card either matches or not, shared by clues and questions
+export interface CardCondition {
   property: "suit" | "rank" | "color" | "parity" | "category";
   operator: "equals" | "not_equals" | "less_than" | "greater_than";
   value: string;
 }
 
-// current probability question
-export interface ProbabilityQuestion {
+// for clues revealed to the player about the hidden card
+export interface KnownInformation extends CardCondition {
+  id: string;
+  description: string;
+}
+
+// current probability question: the chance the hidden card matches the condition
+export interface ProbabilityQuestion extends CardCondition {
   id: string;
   text: string;
   answerType: "fraction" | "decimal";
@@ -42,7 +46,7 @@ export interface GameState {
     isRevealed: boolean;
   };
 
-  // clues collected and  current question
+  // clues collected and current question
   knownInformation: KnownInformation[];
   currentQuestion: ProbabilityQuestion | null;
 
@@ -50,16 +54,13 @@ export interface GameState {
   strikes: number;
   maxStrikes: number;
 
-  // rracks progress through the level
+  // tracks progress through the level
   questionsAnswered: number;
   questionsRequired: number;
 
   // cards that still match all known clues
   remainingPossibleCards: Card[];
   
-  // number of chips the player has
-  chips: number;
-
   // paid hint: player clicked Buy Clue and is picking a type
   choosingHint: boolean;
   // paid hint: remaining-card tray is unlocked for the rest of the level

@@ -152,6 +152,7 @@ export const GAME_SCREEN_CONSTANTS = {
     RESOURCES_BUTTON_GAP: W / 110,
 
     STATS_X: (W * 3) / 4,
+    RESOURCES_X: (W * 5) / 12, // coins and score, left of strikes/progress
     STATS_Y_STRIKES: H / 25,
     STATS_Y_PROGRESS: H / 12,
     STATS_FONT_SIZE: H / 34,
@@ -198,6 +199,8 @@ export const RESULTS_SCREEN_CONSTANTS = {
     TITLE_FONT_SIZE: H / 15,
     SCORE_Y: H / 2.5,
     SCORE_FONT_SIZE: H / 24,
+    TOTALS_Y: H / 2.5 + H / 14,
+    TOTALS_FONT_SIZE: H / 34,
 
     BUTTON_Y: (H * 7) / 12,
     PLAY_AGAIN_X: RESULTS_PLAY_AGAIN_X,
@@ -208,7 +211,7 @@ export const RESULTS_SCREEN_CONSTANTS = {
     BUTTON_FONT_SIZE: H / 33,
 };
 
-// Left column holds the title, stats panel and card grid (right side is left free)
+// Left column holds the stats panel and card grid; the calculations panel sits to its right
 const RR_LEFT_X = W / 36;
 const RR_LEFT_WIDTH = W * 0.57;
 
@@ -253,6 +256,34 @@ export const RISK_REWARD_SCREEN_CONSTANTS = {
     MENU_BUTTON_STROKE: GAME_SCREEN_CONSTANTS.BUTTON_STROKE,
     MENU_BUTTON_MARGIN: W / 40, // distance from the right and bottom edges
 
+    // Calculations panel (right column, beside the stats panel and grid)
+    CALC_X: RR_LEFT_X + RR_LEFT_WIDTH + W / 40,
+    CALC_WIDTH: W - (RR_LEFT_X + RR_LEFT_WIDTH + W / 40) - RR_LEFT_X,
+    CALC_PADDING: W / 60,
+    CALC_TITLE_FONT_SIZE: H / 30,
+    CALC_HINT_FONT_SIZE: H / 60,
+    CALC_LABEL_FONT_SIZE: H / 50,
+    CALC_FIELD_TOP: H / 8, // first field, measured from the panel top
+    CALC_FIELD_GAP: H / 9, // distance from one field to the next
+    CALC_INPUT_Y: H / 30, // input box, below its label
+    CALC_INPUT_HEIGHT: H / 18,
+    CALC_INPUT_FONT_SIZE: H / 43,
+    CALC_ERROR_FONT_SIZE: H / 70,
+    INPUT_FILL: "#f4efe6",
+    ERROR_COLOR: "#ffb3b3", // light red so errors read on the dark panel
+    // Below the three fields: Submit button, then a status message
+    // (and, later, the outcome buttons)
+    CALC_SUBMIT_Y: H / 8 + 3 * (H / 9) + H / 80,
+    CALC_BUTTON_HEIGHT: H / 18,
+    CALC_BUTTON_GAP: W / 80,
+    CALC_MESSAGE_FONT_SIZE: H / 48,
+    CALC_PANEL_HEIGHT: H * 0.7,
+    SUCCESS_COLOR: "#9be59f", // light green for "Correct" on the dark panel
+    LOCKED_CARD_OPACITY: 0.75, // face-down cards while answers aren't correct yet
+    // Flipped card faces
+    REVEALED_RISK_FILL: "#f7d9dc",
+    REVEALED_REWARD_FILL: "#dcefd6",
+
     // Colors
     CARD_FILL: "#fffdf4", // cream, also used for stat boxes
     CARD_STROKE: "#d9cfae", // tan border on cards and stat boxes
@@ -278,6 +309,6 @@ export const COLORS = {
     border: "#fffdf4",
 };
 
-export const STARTING_CHIPS = 10; // number of chips the player starts with
+export const STARTING_CHIPS = 10; // legacy chip setting; paid hints use shared coins
 
-export const COST_OF_CLUE = 3; // number of chips each clue costs
+export const COST_OF_CLUE = 3; // number of shared coins each paid hint costs
