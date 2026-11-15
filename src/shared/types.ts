@@ -46,7 +46,7 @@ export interface GameState {
     isRevealed: boolean;
   };
 
-  // clues collected and  current question
+  // clues collected and current question
   knownInformation: KnownInformation[];
   currentQuestion: ProbabilityQuestion | null;
 
@@ -54,10 +54,19 @@ export interface GameState {
   strikes: number;
   maxStrikes: number;
 
-  // rracks progress through the level
+  // tracks progress through the level
   questionsAnswered: number;
   questionsRequired: number;
 
   // cards that still match all known clues
   remainingPossibleCards: Card[];
+  
+  // paid hint: player clicked Buy Clue and is picking a type
+  choosingHint: boolean;
+  // paid hint: remaining-card tray is unlocked for the rest of the level
+  canViewRemainingCards: boolean;
+  // paid hint: band around the current question's true probability
+  probabilityRange: { low: number; high: number } | null;
 }
+
+export type HintKind = "cards" | "range";
