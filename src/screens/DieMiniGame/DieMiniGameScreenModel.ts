@@ -1,86 +1,76 @@
 export interface Question {
-    prompt: string;
+    question: string;
     options: string[];
     correctIndex: number;
 }
 
 export class DieMiniGameScreenModel {
-    private currentIndex = 0;
-    private score = 0;
-    private isFinished = false;
-
-    // Hardcoded 5 questions - you can customize these text strings easily!
     private questions: Question[] = [
         {
-            prompt: "Question 1: What is the standard starting risk card count?",
-            options: ["3 Cards", "5 Cards", "7 Cards", "10 Cards"],
-            correctIndex: 2, // 7 Cards
+            question: "What is the probability that a pair of dice add up to 7?",
+            options: ["1/6", "1/12", "5/36", "1/9"],
+            correctIndex: 0 // 1/6
         },
         {
-            prompt: "Question 2: What framework is used to render this UI?",
-            options: ["React", "Konva.js", "Vue", "Angular"],
-            correctIndex: 1, // Konva.js
+            question: "What is the probability that a pair of dice add up to an even number?",
+            options: ["1/3", "1/2", "1/4", "2/3"],
+            correctIndex: 1 // 1/2
         },
         {
-            prompt: "Question 3: Which design pattern separates logic from visuals here?",
-            options: ["MVC (Model-View-Controller)", "Singleton", "Factory", "Observer only"],
-            correctIndex: 0,
+            question: "What is the probability that a pair of dice are both prime numbers?",
+            options: ["1/6", "1/9", "1/4", "1/3"],
+            correctIndex: 2 // 1/4
         },
         {
-            prompt: "Question 4: By what night must sprint features be merged?",
-            options: ["Friday night", "Sunday night", "Monday night", "Tuesday night"],
-            correctIndex: 2, // Monday night
+            question: "What is the probability where one die is a factor of the other?",
+            options: ["5/18", "7/18", "4/9", "1/2"],
+            correctIndex: 1 // 7/18
         },
         {
-            prompt: "Question 5: What is the primary goal of this 5-hour crunch?",
-            options: ["Build a working MVP", "Rewrite the engine", "Add multiplayer", "Do nothing"],
-            correctIndex: 0,
-        },
+            question: "What is the probability that the absolute difference between a pair of dice is 2?",
+            options: ["1/6", "1/9", "2/9", "5/36"],
+            correctIndex: 2 // 2/9
+        }
     ];
 
+    private currentQuestionIndex = 0;
+    private score = 0;
+
     constructor() {
-        this.start();
+        this.resetGame();
     }
 
-    start(): void {
-        this.currentIndex = 0;
+    public resetGame(): void {
+        this.currentQuestionIndex = 0;
         this.score = 0;
-        this.isFinished = false;
     }
 
-    getCurrentQuestion(): Question | null {
-        const q = this.questions[this.currentIndex];
-        if (this.isFinished || !q) {
-            return null;
-        }
-        return q;
+    public getCurrentQuestion(): Question | null {
+        return this.questions[this.currentQuestionIndex] ?? null;
     }
 
-    answerCurrentQuestion(selectedOptionIndex: number): boolean {
-        const q = this.getCurrentQuestion();
-        if (!q) return false;
+    public answerCurrentQuestion(selectedIndex: number): boolean {
+        const current = this.getCurrentQuestion();
+        if (!current) return false;
 
-        const correct = selectedOptionIndex === q.correctIndex;
-        if (correct) {
-            this.score += 10;
+        const isCorrect = selectedIndex === current.correctIndex;
+        if (isCorrect) {
+            this.score += 1;
         }
 
-        this.currentIndex++;
-        if (this.currentIndex >= this.questions.length) {
-            this.isFinished = true;
-        }
-        return correct;
+        this.currentQuestionIndex++;
+        return isCorrect;
     }
 
-    getScore(): number {
+    public isGameOver(): boolean {
+        return this.currentQuestionIndex >= this.questions.length;
+    }
+
+    public getScore(): number {
         return this.score;
     }
 
-    getProgressText(): string {
-        return `Question ${Math.min(this.currentIndex + 1, this.questions.length)} of ${this.questions.length}`;
-    }
-
-    isGameOver(): boolean {
-        return this.isFinished;
+    public getTotalQuestions(): number {
+        return this.questions.length;
     }
 }

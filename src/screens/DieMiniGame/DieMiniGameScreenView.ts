@@ -148,7 +148,7 @@ export class DieMiniGameScreenView implements View {
             x: c.LEFT_X + 15,
             y: boxY + 15,
             width: c.LEFT_WIDTH - 30,
-            text: question.prompt,
+            text: question.question,
             fontSize: 16,
             fontFamily: "Arial",
             fontStyle: "bold",
