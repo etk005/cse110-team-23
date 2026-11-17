@@ -2,10 +2,12 @@ import type {
     GameState,
     Card,
     Level,
+    HintKind
 } from "../../shared/types.ts";
 import { getNextInformation } from "../../game/informationEngine.ts";
 import { generateQuestion, probabilityOf } from "../../game/questionGenerator.ts";
 import { getRemainingPossibleCards } from "../../cardFilter.ts";
+
 
 // how far a typed answer can be from the exact probability and still count,
 // so a decimal rounded to 2 places (like 0.33 for 1/3) is accepted
@@ -22,10 +24,7 @@ export class GameScreenModel {
     // ids of questions already asked this level, so none repeat
     private askedQuestionIds = new Set<string>();
 
-    /**
-     * @param random source of randomness for picking the hidden card;
-     * tests can pass a fixed function to make games deterministic.
-     */
+    /** Accepts a random source so hidden-card selection can be tested deterministically. */
     constructor(private random: () => number = Math.random) {
         // nil value for now
         // TODO: make game screen properly handle before init
@@ -41,7 +40,10 @@ export class GameScreenModel {
             "questionsRequired": 0,
             "remainingPossibleCards": [],
             "status": "playing",
-            "strikes": 0
+            "strikes": 0,
+            "choosingHint": false,
+            "canViewRemainingCards": false,
+            "probabilityRange": null
         };
         this.level = null;
     }
@@ -63,7 +65,10 @@ export class GameScreenModel {
             questionsRequired: level.questionsRequired,
             remainingPossibleCards: level.deck,
             status: "playing",
-            strikes: 0
+            strikes: 0,
+            choosingHint: false,
+            canViewRemainingCards: false,
+            probabilityRange: null
         };
 
         this.revealNextClue(state);
@@ -164,6 +169,8 @@ export class GameScreenModel {
             return false;
         }
 
+        this.state.choosingHint = false;
+
         const parts = answer.split("/");
 
         const numericAnswer = parts.length === 2
@@ -200,5 +207,64 @@ export class GameScreenModel {
         this.waitingForNext = false;
         this.revealNextClue(this.state);
         this.askNextQuestion(this.state);
+        this.state.probabilityRange = null;
+        this.state.choosingHint = false;
+    }
+
+    /**
+     * Opens the hint picker without charging coins or adding card facts.
+     */
+    openHintMenu(): "opened" | "already_bought" {
+        if (this.state.canViewRemainingCards && this.state.probabilityRange !== null) {
+            return "already_bought";
+        }
+        this.state.choosingHint = true;
+        return "opened";
+    }
+
+    /**
+     * Unlocks the selected hint after the controller charges the shared coins.
+     * Reveals remaining cards or a probability range without adding card facts.
+     */
+    buyHint(kind: HintKind): "bought" | "already_bought" {
+
+        if (kind === "cards") {
+            if (this.state.canViewRemainingCards) {
+                this.state.choosingHint = false;
+                return "already_bought";
+            }
+
+            this.state.canViewRemainingCards = true;
+            this.state.choosingHint = false;
+            return "bought";
+        }
+
+        if (this.state.probabilityRange !== null) {
+            this.state.choosingHint = false;
+            return "already_bought";
+        }
+
+        this.state.probabilityRange = this.buildProbabilityRange(
+            this.getCorrectAnswer()
+        );
+        this.state.choosingHint = false;
+        return "bought";
+    }
+
+    /** Returns a wider, overlapping probability band containing p. */
+    private buildProbabilityRange(p: number): { low: number; high: number } {
+        const buckets = [
+            { low: 0, high: 0.4 },
+            { low: 0.2, high: 0.6 },
+            { low: 0.4, high: 0.8 },
+            { low: 0.6, high: 1 }
+        ];
+        for (const bucket of buckets) {
+            if (p >= bucket.low && p < bucket.high) {
+                return bucket;
+            }
+        }
+        // Include a probability of exactly 1 in the last band.
+        return buckets[buckets.length - 1] ?? { low: 0, high: 1 };
     }
 }

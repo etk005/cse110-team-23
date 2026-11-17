@@ -1,31 +1,69 @@
 import Konva from "konva";
 import type { View } from "../../types.ts";
 import { STAGE_WIDTH, STAGE_HEIGHT, COLORS, RISK_REWARD_SCREEN_CONSTANTS } from "../../constants.ts";
+import { REWARD_VALUES } from "./RiskRewardScreenModel.ts";
+import type { CalcField, RiskRewardCard, RiskRewardPhase } from "./RiskRewardScreenModel.ts";
+
+export type { CalcField };
 
 // Short alias so layout code stays readable
 const c = RISK_REWARD_SCREEN_CONSTANTS;
 
-/** The numbers the view needs to draw the stats panel and card grid. */
-export interface RiskRewardStats {
-    cardCount: number;   // total cards in the deck (one grid slot each)
-    riskCount: number;   // Risk cards remaining
-    rewardCount: number; // Reward cards remaining
-    chips: number;       // temporary minigame chips (separate from main coins)
+/** Everything the view needs to draw the current state of the minigame. */
+export interface RiskRewardViewState {
+    // One entry per grid slot: null while face-down, otherwise what was flipped
+    cards: (RiskRewardCard | null)[];
+    cardCount: number;   // cards not yet flipped
+    riskCount: number;   // Risk cards not yet flipped
+    rewardCount: number; // Reward cards not yet flipped
+    rewardCounts: Record<number, number>; // face-down Reward cards per chip value
+    chips: number;       // temporary minigame chips (separate from the total balance)
+    coins: number;       // the player's coins (cash-outs are added here)
+    phase: RiskRewardPhase;
+    canContinue: boolean; // a Reward was flipped and cards are left
+    message: string;      // status line under the Submit button
+    messageTone: "info" | "success" | "error";
 }
 
+/** What the screen's buttons and inputs do; wired up by the controller. */
+export interface RiskRewardHandlers {
+    onMenu: () => void;
+    onInputChange: (field: CalcField, text: string) => void;
+    onSubmit: () => void;
+    onFlip: (index: number) => void;
+    onCashOut: () => void;
+    onContinue: () => void;
+}
+
+/** Color for the text under an input: format errors, "Correct" or "Not quite". */
+export type FeedbackTone = "error" | "success";
+
+const CALC_FIELDS: { field: CalcField; label: string; placeholder: string }[] = [
+    { field: "risk", label: "P(Risk) on the next flip", placeholder: "e.g. 2/5 or 0.4" },
+    { field: "reward", label: "P(Reward) on the next flip", placeholder: "e.g. 4/5 or 0.8" },
+    { field: "expectedValue", label: "Expected chip gain/loss from the next flip", placeholder: "e.g. 7/3 or 2.33" },
+];
+
 /**
- * Renders the Risk/Reward minigame: the title, a stats panel with the
- * starting counts, and a grid of face-down cards. Everything sits in a
- * column on the left side of the screen.
+ * Renders the Risk/Reward minigame: the title, a stats panel, the card grid
+ * on the left, and on the right the calculations panel where the player
+ * enters P(Risk), P(Reward) and the expected value before each flip.
  */
 export class RiskRewardScreenView implements View {
     // Root group for the whole screen (hidden until the minigame starts)
     private group: Konva.Group;
     // Holds the stats panel and cards; cleared and redrawn on every render()
     private content: Konva.Group;
+    // Error text under each input (Konva, so it sits on the canvas)
+    private errorTexts = new Map<CalcField, Konva.Text>();
+    // Real <input> elements, placed over the canvas (Konva can't draw text boxes)
+    private overlay: HTMLDivElement | null = null;
+    private inputs = new Map<CalcField, HTMLInputElement>();
+    // Submit button, status message and outcome buttons; redrawn on every render()
+    private calcActions: Konva.Group;
 
-    /** @param onMenuClick Called when the Main Menu button is clicked */
-    constructor(onMenuClick: () => void) {
+    /** @param handlers What each button / input does (see RiskRewardHandlers) */
+    constructor(private handlers: RiskRewardHandlers) {
         this.group = new Konva.Group({ visible: false });
 
         // Full-screen background
@@ -39,10 +77,187 @@ export class RiskRewardScreenView implements View {
         this.group.add(this.createTitle());
 
         // Lets the player leave the minigame (also static, so drawn once)
-        this.group.add(this.createMenuButton(onMenuClick));
+        this.group.add(this.createMenuButton(handlers.onMenu));
 
         this.content = new Konva.Group();
         this.group.add(this.content);
+
+        // The calculations panel layout never changes; only the inputs' text does
+        const calcPanel = this.createCalcPanel();
+        this.calcActions = new Konva.Group({ x: c.CALC_PADDING, y: c.CALC_SUBMIT_Y });
+        calcPanel.add(this.calcActions);
+        this.group.add(calcPanel);
+    }
+
+    /** Right-hand panel: title, short instructions and one labelled slot per input. */
+    private createCalcPanel(): Konva.Group {
+        const panel = new Konva.Group({ x: c.CALC_X, y: c.STATS_PANEL_Y });
+        const innerWidth = c.CALC_WIDTH - 2 * c.CALC_PADDING;
+        panel.add(new Konva.Rect({
+            width: c.CALC_WIDTH,
+            height: c.CALC_PANEL_HEIGHT,
+            fill: c.PANEL_FILL,
+            stroke: c.PANEL_STROKE,
+            strokeWidth: 2,
+            cornerRadius: c.PANEL_RADIUS,
+        }));
+        panel.add(new Konva.Text({
+            x: c.CALC_PADDING,
+            y: c.CALC_PADDING,
+            text: "Your Calculations",
+            fontSize: c.CALC_TITLE_FONT_SIZE,
+            fontFamily: "Georgia",
+            fontStyle: "bold",
+            fill: COLORS.text,
+        }));
+        panel.add(new Konva.Text({
+            x: c.CALC_PADDING,
+            y: c.CALC_PADDING + c.CALC_TITLE_FONT_SIZE * 1.4,
+            width: innerWidth,
+            text: `Use the cards left and your current chips. ${REWARD_VALUES.length > 1 ? `Rewards are worth ${REWARD_VALUES.map((v) => `+${v}`).join(", ")} chips` : `A Reward adds ${REWARD_VALUES[0] ?? 1} chip${REWARD_VALUES[0] === 1 ? "" : "s"}`}; a Risk loses them all. Fractions or decimals are fine.`,
+            fontSize: c.CALC_HINT_FONT_SIZE,
+            fontFamily: "Arial",
+            lineHeight: 1.3,
+            fill: COLORS.text,
+        }));
+
+        CALC_FIELDS.forEach(({ field, label }, i) => {
+            const y = c.CALC_FIELD_TOP + i * c.CALC_FIELD_GAP;
+            panel.add(new Konva.Text({
+                x: c.CALC_PADDING,
+                y,
+                text: label,
+                fontSize: c.CALC_LABEL_FONT_SIZE,
+                fontFamily: "Arial",
+                fontStyle: "bold",
+                fill: COLORS.text,
+            }));
+            const error = new Konva.Text({
+                x: c.CALC_PADDING,
+                y: y + c.CALC_INPUT_Y + c.CALC_INPUT_HEIGHT + c.CALC_ERROR_FONT_SIZE / 2,
+                width: innerWidth,
+                text: "",
+                fontSize: c.CALC_ERROR_FONT_SIZE,
+                fontFamily: "Arial",
+                fill: c.ERROR_COLOR,
+            });
+            this.errorTexts.set(field, error);
+            panel.add(error);
+        });
+        return panel;
+    }
+
+    /** Builds the HTML inputs once, the first time the screen is shown. */
+    private ensureInputs(): void {
+        if (this.overlay || typeof document === "undefined") {
+            return;
+        }
+        // Same size as the stage and scaled with CSS, so inputs use stage coordinates
+        const overlay = document.createElement("div");
+        overlay.style.cssText = [
+            "position: fixed",
+            "left: 0",
+            "top: 0",
+            `width: ${STAGE_WIDTH}px`,
+            `height: ${STAGE_HEIGHT}px`,
+            "transform-origin: 0 0",
+            "pointer-events: none", // clicks fall through to the canvas...
+            "display: none",
+        ].join(";");
+
+        CALC_FIELDS.forEach(({ field, label, placeholder }, i) => {
+            const input = document.createElement("input");
+            input.type = "text";
+            input.placeholder = placeholder;
+            input.autocomplete = "off";
+            input.setAttribute("aria-label", label);
+            input.style.cssText = [
+                "position: absolute",
+                "box-sizing: border-box",
+                "pointer-events: auto", // ...except on the inputs themselves
+                `left: ${c.CALC_X + c.CALC_PADDING}px`,
+                `top: ${c.STATS_PANEL_Y + c.CALC_FIELD_TOP + i * c.CALC_FIELD_GAP + c.CALC_INPUT_Y}px`,
+                `width: ${c.CALC_WIDTH - 2 * c.CALC_PADDING}px`,
+                `height: ${c.CALC_INPUT_HEIGHT}px`,
+                `padding: 0 ${c.CALC_PADDING}px`,
+                `font: ${c.CALC_INPUT_FONT_SIZE}px Arial, sans-serif`,
+                `background: ${c.INPUT_FILL}`,
+                `border: 2px solid ${c.CARD_STROKE}`,
+                `border-radius: ${c.RADIUS}px`,
+                `color: ${COLORS.background}`,
+                "outline: none",
+            ].join(";");
+            input.addEventListener("input", () => this.handlers.onInputChange(field, input.value));
+            input.addEventListener("keydown", (event) => {
+                if (event.key === "Enter") this.handlers.onSubmit();
+            });
+            this.inputs.set(field, input);
+            overlay.appendChild(input);
+        });
+
+        document.body.appendChild(overlay);
+        this.overlay = overlay;
+
+        // Keep the overlay lined up with the canvas (wait a frame for main.ts to resize the stage)
+        window.addEventListener("resize", () => requestAnimationFrame(() => this.positionOverlay()));
+    }
+
+    /** Shows/hides the inputs with the screen and lines them up with the scaled canvas. */
+    private positionOverlay(): void {
+        if (!this.overlay) {
+            return;
+        }
+        const stage = this.group.getStage();
+        const visible = this.group.visible() && stage !== null;
+        this.overlay.style.display = visible ? "block" : "none";
+        if (!visible || !stage) {
+            return;
+        }
+        const box = stage.container().getBoundingClientRect();
+        this.overlay.style.left = `${box.left}px`;
+        this.overlay.style.top = `${box.top}px`;
+        this.overlay.style.transform = `scale(${stage.scaleX()})`;
+    }
+
+    /** Shows a message under an input (null clears it); errors also turn its border red. */
+    setFieldFeedback(field: CalcField, message: string | null, tone: FeedbackTone = "error"): void {
+        const text = this.errorTexts.get(field);
+        text?.text(message ?? "");
+        text?.fill(tone === "success" ? c.SUCCESS_COLOR : c.ERROR_COLOR);
+        const input = this.inputs.get(field);
+        if (input) {
+            input.style.borderColor =
+                message === null ? c.CARD_STROKE : tone === "success" ? c.REWARD_COLOR : c.RISK_COLOR;
+        }
+        this.group.getLayer()?.batchDraw();
+    }
+
+    /** Inputs can only be edited while the player is calculating. */
+    private setInputsEnabled(enabled: boolean): void {
+        for (const input of this.inputs.values()) {
+            input.readOnly = !enabled;
+            input.style.opacity = enabled ? "1" : "0.7";
+        }
+    }
+
+    /** Current text in each input (empty strings before the inputs exist). */
+    getInputValues(): Record<CalcField, string> {
+        return {
+            risk: this.inputs.get("risk")?.value ?? "",
+            reward: this.inputs.get("reward")?.value ?? "",
+            expectedValue: this.inputs.get("expectedValue")?.value ?? "",
+        };
+    }
+
+    /** Empties every input and clears its error (used when a new round starts). */
+    clearInputs(): void {
+        for (const { field } of CALC_FIELDS) {
+            const input = this.inputs.get(field);
+            if (input) {
+                input.value = "";
+            }
+            this.setFieldFeedback(field, null);
+        }
     }
 
     /** "Menu" button in the bottom-right corner. */
@@ -117,8 +332,10 @@ export class RiskRewardScreenView implements View {
      * Draws the stat boxes and one face-down card per card in the deck.
      * Safe to call again: the previous drawing is cleared first.
      */
-    render(stats: RiskRewardStats): void {
+    render(stats: RiskRewardViewState): void {
         this.content.destroyChildren();
+        this.renderActions(stats);
+        this.setInputsEnabled(stats.phase === "calculating");
 
         // ---- Stats panel ----
         // Each entry is [label, value]; boxes fill left to right, wrapping
@@ -127,7 +344,12 @@ export class RiskRewardScreenView implements View {
             ["CARDS REMAINING", stats.cardCount],
             ["RISK REMAINING", stats.riskCount],
             ["REWARD REMAINING", stats.rewardCount],
+            // Per-value boxes only matter when Rewards are worth different amounts
+            ...(REWARD_VALUES.length > 1
+                ? REWARD_VALUES.map((value): [string, number] => [`+${value} REWARDS LEFT`, stats.rewardCounts[value] ?? 0])
+                : []),
             ["CURRENT MINIGAME CHIPS", stats.chips],
+            ["YOUR COINS", stats.coins],
         ];
         // Box width is whatever fits STATS_COLUMNS boxes (plus gaps) inside
         // the panel's padding; panel height grows with the number of rows.
@@ -192,7 +414,7 @@ export class RiskRewardScreenView implements View {
         // Starts just below the stats panel, so moving STATS_PANEL_Y moves
         // the grid too. Card width is whatever fits GRID_COLUMNS cards.
         const gridPanelY = c.STATS_PANEL_Y + statsPanelHeight + c.GRID_PANEL_GAP;
-        const rows = Math.ceil(stats.cardCount / c.GRID_COLUMNS);
+        const rows = Math.ceil(stats.cards.length / c.GRID_COLUMNS);
         const gridInnerWidth = c.LEFT_WIDTH - 2 * c.GRID_PADDING;
         const cardWidth = (gridInnerWidth - (c.GRID_COLUMNS - 1) * c.CARD_GAP) / c.GRID_COLUMNS;
         const gridPanelHeight =
@@ -210,16 +432,25 @@ export class RiskRewardScreenView implements View {
             cornerRadius: c.PANEL_RADIUS,
         }));
 
-        // One card per deck slot, filled left to right, top to bottom
-        for (let i = 0; i < stats.cardCount; i++) {
+        // One card per deck slot, filled left to right, top to bottom.
+        // Face-down cards can only be clicked once the answers are correct.
+        stats.cards.forEach((face, i) => {
             const col = i % c.GRID_COLUMNS;
             const row = Math.floor(i / c.GRID_COLUMNS);
-            this.content.add(this.createCard(
-                c.LEFT_X + c.GRID_PADDING + col * (cardWidth + c.CARD_GAP),
-                gridPanelY + c.GRID_PADDING + row * (c.CARD_HEIGHT + c.CARD_GAP),
-                cardWidth
-            ));
-        }
+            const x = c.LEFT_X + c.GRID_PADDING + col * (cardWidth + c.CARD_GAP);
+            const y = gridPanelY + c.GRID_PADDING + row * (c.CARD_HEIGHT + c.CARD_GAP);
+            if (face !== null) {
+                this.content.add(this.createRevealedCard(x, y, cardWidth, face));
+                return;
+            }
+            const card = this.createCard(x, y, cardWidth);
+            if (stats.phase === "flipping") {
+                this.makeClickable(card, () => this.handlers.onFlip(i));
+            } else {
+                card.opacity(c.LOCKED_CARD_OPACITY);
+            }
+            this.content.add(card);
+        });
 
         this.group.getLayer()?.draw();
     }
@@ -262,16 +493,143 @@ export class RiskRewardScreenView implements View {
         return card;
     }
 
+    /** A flipped card: "RISK" on pink or "REWARD +value" on green. */
+    private createRevealedCard(x: number, y: number, width: number, face: RiskRewardCard): Konva.Group {
+        const isRisk = face.type === "risk";
+        const card = new Konva.Group({ x, y });
+        card.add(new Konva.Rect({
+            width,
+            height: c.CARD_HEIGHT,
+            fill: isRisk ? c.REVEALED_RISK_FILL : c.REVEALED_REWARD_FILL,
+            stroke: isRisk ? c.RISK_COLOR : c.REWARD_COLOR,
+            strokeWidth: 3,
+            cornerRadius: c.RADIUS,
+        }));
+        card.add(new Konva.Text({
+            width,
+            height: c.CARD_HEIGHT,
+            align: "center",
+            verticalAlign: "middle",
+            text: face.type === "risk" ? "RISK" : `REWARD\n+${face.value}`,
+            lineHeight: 1.3,
+            fontSize: c.CARD_FONT_SIZE * 0.6,
+            fontFamily: "Arial",
+            fontStyle: "bold",
+            fill: isRisk ? c.RISK_COLOR : c.REWARD_COLOR,
+        }));
+        return card;
+    }
+
+    /**
+     * Bottom of the calculations panel: Submit while calculating, then a status
+     * message, then Cash Out / Continue after a Reward, or Back to Menu after
+     * cashing out.
+     */
+    private renderActions(stats: RiskRewardViewState): void {
+        this.calcActions.destroyChildren();
+        const width = c.CALC_WIDTH - 2 * c.CALC_PADDING;
+        let y = 0;
+
+        if (stats.phase === "calculating") {
+            this.calcActions.add(this.createActionButton("Submit", 0, y, width, "primary", this.handlers.onSubmit));
+            y += c.CALC_BUTTON_HEIGHT + c.CALC_BUTTON_GAP;
+        }
+
+        if (stats.message) {
+            const toneColor = {
+                info: COLORS.text,
+                success: c.SUCCESS_COLOR,
+                error: c.ERROR_COLOR,
+            }[stats.messageTone];
+            const message = new Konva.Text({
+                y,
+                width,
+                text: stats.message,
+                fontSize: c.CALC_MESSAGE_FONT_SIZE,
+                fontFamily: "Arial",
+                fontStyle: "bold",
+                lineHeight: 1.3,
+                fill: toneColor,
+            });
+            this.calcActions.add(message);
+            y += message.height() + c.CALC_BUTTON_GAP;
+        }
+
+        const half = (width - c.CALC_BUTTON_GAP) / 2;
+        if (stats.phase === "reward") {
+            this.calcActions.add(
+                this.createActionButton("Cash Out", 0, y, stats.canContinue ? half : width, "primary", this.handlers.onCashOut)
+            );
+            if (stats.canContinue) {
+                this.calcActions.add(
+                    this.createActionButton("Continue", half + c.CALC_BUTTON_GAP, y, half, "secondary", this.handlers.onContinue)
+                );
+            }
+        } else if (stats.phase === "cashedOut") {
+            this.calcActions.add(this.createActionButton("Back to Menu", 0, y, width, "primary", this.handlers.onMenu));
+        }
+    }
+
+    /** Red filled ("primary") or cream outlined ("secondary") button. */
+    private createActionButton(
+        label: string,
+        x: number,
+        y: number,
+        width: number,
+        style: "primary" | "secondary",
+        onClick: () => void
+    ): Konva.Group {
+        const primary = style === "primary";
+        const button = new Konva.Group({ x, y });
+        button.add(new Konva.Rect({
+            width,
+            height: c.CALC_BUTTON_HEIGHT,
+            fill: primary ? COLORS.button : c.CARD_FILL,
+            stroke: primary ? COLORS.buttonDark : c.CARD_STROKE,
+            strokeWidth: c.MENU_BUTTON_STROKE,
+            cornerRadius: c.MENU_BUTTON_RADIUS,
+        }));
+        button.add(new Konva.Text({
+            width,
+            height: c.CALC_BUTTON_HEIGHT,
+            text: label,
+            fontSize: c.MENU_BUTTON_FONT_SIZE,
+            fontFamily: "Arial",
+            fontStyle: "bold",
+            fill: primary ? COLORS.text : COLORS.background,
+            align: "center",
+            verticalAlign: "middle",
+        }));
+        this.makeClickable(button, onClick);
+        return button;
+    }
+
+    /** Click handler plus a pointer cursor on hover. */
+    private makeClickable(node: Konva.Group, onClick: () => void): void {
+        node.on("click tap", onClick);
+        node.on("mouseenter", () => {
+            const stage = node.getStage();
+            if (stage) stage.container().style.cursor = "pointer";
+        });
+        node.on("mouseleave", () => {
+            const stage = node.getStage();
+            if (stage) stage.container().style.cursor = "default";
+        });
+    }
+
     /** Makes the screen visible and redraws the layer. */
     show(): void {
         this.group.visible(true);
         this.group.getLayer()?.draw();
+        this.ensureInputs();
+        this.positionOverlay();
     }
 
     /** Hides the screen and redraws the layer. */
     hide(): void {
         this.group.visible(false);
         this.group.getLayer()?.draw();
+        this.positionOverlay();
     }
 
     /** Root group, added to the shared layer by main.ts. */

@@ -9,7 +9,12 @@ import { LevelsScreenController } from "./screens/LevelsScreen/LevelsScreenContr
 import { LoadingScreenController } from "./screens/LoadingScreen/LoadingScreenController.ts";
 import { PlayerResources } from "./game/playerResources.ts";
 import { RiskRewardScreenController } from "./screens/RiskRewardScreen/RiskRewardScreenController.ts";
+<<<<<<< HEAD
 import { DieMiniGameScreenController } from "./screens/DieMiniGame/DieMiniGameScreenController.ts"; // <--- Added import
+=======
+import { AuthScreenController } from "./screens/AuthScreen/AuthScreenController.ts";
+import { supabase } from "./lib/supabase.ts";
+>>>>>>> 0bd511a29a3edc02017dbe0151e284c707f9a9b6
 
 // Main application class that manages the screens and navigation
 class App implements ScreenSwitcher {
@@ -22,7 +27,11 @@ class App implements ScreenSwitcher {
     private levelsController: LevelsScreenController;
     private loadingController: LoadingScreenController;
     private riskRewardController: RiskRewardScreenController;
+<<<<<<< HEAD
     private dieMiniGameController: DieMiniGameScreenController; // <--- Added controller property
+=======
+    private authController: AuthScreenController;
+>>>>>>> 0bd511a29a3edc02017dbe0151e284c707f9a9b6
 
     constructor(container: string) {
         Konva.pixelRatio = window.devicePixelRatio;
@@ -44,8 +53,13 @@ class App implements ScreenSwitcher {
         this.resultsController = new ResultsScreenController(this, resources);
         this.levelsController = new LevelsScreenController(this);
         this.loadingController = new LoadingScreenController(this);
+<<<<<<< HEAD
         this.riskRewardController = new RiskRewardScreenController(this);
         this.dieMiniGameController = new DieMiniGameScreenController(this); // <--- Initialized
+=======
+        this.riskRewardController = new RiskRewardScreenController(this, resources);
+        this.authController = new AuthScreenController(this);
+>>>>>>> 0bd511a29a3edc02017dbe0151e284c707f9a9b6
 
         // Add all screen views to the same layer
         this.layer.add(this.menuController.getView().getGroup());
@@ -54,13 +68,27 @@ class App implements ScreenSwitcher {
         this.layer.add(this.levelsController.getView().getGroup());
         this.layer.add(this.loadingController.getView().getGroup());
         this.layer.add(this.riskRewardController.getView().getGroup());
+<<<<<<< HEAD
         this.layer.add(this.dieMiniGameController.getView().getGroup()); // <--- Added view group
+=======
+        this.layer.add(this.authController.getView().getGroup());
+>>>>>>> 0bd511a29a3edc02017dbe0151e284c707f9a9b6
 
         window.addEventListener("resize", () => this.fitStageToViewport());
 
         this.layer.draw();
         this.fitStageToViewport();
-        this.menuController.show();
+        this.switchToScreen({
+            type: "loading",
+            loader: async () => {
+                const result = await supabase.auth.getUser();
+                if (result.data.user === null) {
+                    return { type: "auth" };
+                } else {
+                    return { type: "menu" };
+                }
+            }
+        })
     }
 
     private fitStageToViewport(): void {
@@ -86,7 +114,11 @@ class App implements ScreenSwitcher {
         this.levelsController.hide();
         this.loadingController.hide();
         this.riskRewardController.hide();
+<<<<<<< HEAD
         this.dieMiniGameController.hide(); // <--- Added hide
+=======
+        this.authController.hide();
+>>>>>>> 0bd511a29a3edc02017dbe0151e284c707f9a9b6
 
         switch (screen.type) {
             case "menu":
@@ -122,6 +154,10 @@ class App implements ScreenSwitcher {
 
             case "loading":
                 this.loadingController.wait(screen.loader);
+                break;
+
+            case "auth":
+                this.authController.show();
                 break;
         }
     }
