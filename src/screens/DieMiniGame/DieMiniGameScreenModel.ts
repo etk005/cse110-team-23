@@ -46,7 +46,7 @@ export class DieMiniGameScreenModel {
     }
 
     public getCurrentQuestion(): Question | null {
-        return this.questions[this.currentQuestionIndex] ?? null;
+        return this.questions[this.currentIndex] ?? null;
     }
 
     public answerCurrentQuestion(selectedIndex: number): boolean {

@@ -28,6 +28,12 @@ export class DieMiniGameScreenController extends ScreenController {
         this.updateView();
     }
 
+    public startGame(): void {
+        this.model.resetGame();
+        this.updateView();
+        this.show();
+    }
+
     private updateView(): void {
         const question = this.model.getCurrentQuestion();
         this.view.renderGame(
