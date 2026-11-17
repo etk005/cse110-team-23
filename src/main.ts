@@ -9,6 +9,7 @@ import { LevelsScreenController } from "./screens/LevelsScreen/LevelsScreenContr
 import { LoadingScreenController } from "./screens/LoadingScreen/LoadingScreenController.ts";
 import { PlayerResources } from "./game/playerResources.ts";
 import { RiskRewardScreenController } from "./screens/RiskRewardScreen/RiskRewardScreenController.ts";
+import { DieMiniGameScreenController } from "./screens/DieMiniGame/DieMiniGameScreenController.ts"; // <--- Added import
 
 // Main application class that manages the screens and navigation
 class App implements ScreenSwitcher {
@@ -21,13 +22,11 @@ class App implements ScreenSwitcher {
     private levelsController: LevelsScreenController;
     private loadingController: LoadingScreenController;
     private riskRewardController: RiskRewardScreenController;
+    private dieMiniGameController: DieMiniGameScreenController; // <--- Added controller property
 
     constructor(container: string) {
-        // Draw at the screen's real pixel density so it's sharp on retina displays
-        // (must be set before the stage is created)
         Konva.pixelRatio = window.devicePixelRatio;
 
-        // Set up the Konva stage and layer for rendering screens
         this.stage = new Konva.Stage({
             container,
             width: STAGE_WIDTH,
@@ -37,7 +36,6 @@ class App implements ScreenSwitcher {
         this.layer = new Konva.Layer();
         this.stage.add(this.layer);
 
-        // One set of coins and score, shared by every screen that shows them
         const resources = new PlayerResources();
 
         // Initialize the screen controllers
@@ -47,6 +45,7 @@ class App implements ScreenSwitcher {
         this.levelsController = new LevelsScreenController(this);
         this.loadingController = new LoadingScreenController(this);
         this.riskRewardController = new RiskRewardScreenController(this);
+        this.dieMiniGameController = new DieMiniGameScreenController(this); // <--- Initialized
 
         // Add all screen views to the same layer
         this.layer.add(this.menuController.getView().getGroup());
@@ -55,6 +54,7 @@ class App implements ScreenSwitcher {
         this.layer.add(this.levelsController.getView().getGroup());
         this.layer.add(this.loadingController.getView().getGroup());
         this.layer.add(this.riskRewardController.getView().getGroup());
+        this.layer.add(this.dieMiniGameController.getView().getGroup()); // <--- Added view group
 
         window.addEventListener("resize", () => this.fitStageToViewport());
 
@@ -63,7 +63,6 @@ class App implements ScreenSwitcher {
         this.menuController.show();
     }
 
-    // Scale the 1920x1080 stage to fit the browser window, keeping its shape
     private fitStageToViewport(): void {
         const viewportWidth = document.documentElement.clientWidth;
         const viewportHeight = document.documentElement.clientHeight;
@@ -73,9 +72,6 @@ class App implements ScreenSwitcher {
             viewportHeight / STAGE_HEIGHT
         );
 
-        // The stage is the real on-screen size; scale() maps the 1920x1080
-        // design coordinates onto it. Do not also resize the canvas with CSS,
-        // or the drawing is shrunk twice and ends up off-center.
         this.stage.width(STAGE_WIDTH * scale);
         this.stage.height(STAGE_HEIGHT * scale);
         this.stage.scale({ x: scale, y: scale });
@@ -83,7 +79,6 @@ class App implements ScreenSwitcher {
         this.stage.batchDraw();
     }
 
-    // Hide the current screen and display the requested screen
     switchToScreen(screen: Screen): void {
         this.menuController.hide();
         this.gameController.hide();
@@ -91,6 +86,7 @@ class App implements ScreenSwitcher {
         this.levelsController.hide();
         this.loadingController.hide();
         this.riskRewardController.hide();
+        this.dieMiniGameController.hide(); // <--- Added hide
 
         switch (screen.type) {
             case "menu":
@@ -117,8 +113,11 @@ class App implements ScreenSwitcher {
                 break;
 
             case "riskReward":
-                // startGame() builds a new shuffled deck, draws it, and shows the screen
                 this.riskRewardController.startGame();
+                break;
+
+            case "dieMiniGame": // <--- Added case handler
+                this.dieMiniGameController.startGame();
                 break;
 
             case "loading":
