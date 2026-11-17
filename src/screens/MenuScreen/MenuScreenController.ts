@@ -8,7 +8,7 @@ export class MenuScreenController extends ScreenController {
     constructor(screenSwitcher: ScreenSwitcher) {
         super();
         this.view = new MenuScreenView(
-            () => screenSwitcher.switchToScreen({ type: "game" }),
+            () => screenSwitcher.switchToScreen({ type: "levels" }),
             () => screenSwitcher.switchToScreen({ type: "riskReward" }),
             () => screenSwitcher.switchToScreen({ type: "dieMiniGame" }) // <--- Triggers your new minigame
         );
