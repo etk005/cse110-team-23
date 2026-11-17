@@ -9,27 +9,27 @@ export class DieMiniGameScreenModel {
         {
             question: "What is the probability that a pair of dice add up to 7?",
             options: ["1/6", "1/12", "5/36", "1/9"],
-            correctIndex: 1 // 1/6
+            correctIndex: 0 // 1/6
         },
         {
             question: "What is the probability that a pair of dice add up to an even number?",
             options: ["1/3", "1/2", "1/4", "2/3"],
-            correctIndex: 2 // 1/2
+            correctIndex: 1 // 1/2
         },
         {
             question: "What is the probability that a pair of dice are both prime numbers?",
             options: ["1/6", "1/9", "1/4", "1/3"],
-            correctIndex: 3 // 1/4
+            correctIndex: 2 // 1/4
         },
         {
             question: "What is the probability where one die is a factor of the other?",
             options: ["5/18", "7/18", "4/9", "1/2"],
-            correctIndex: 2 // 7/18
+            correctIndex: 1 // 7/18
         },
         {
             question: "What is the probability that the absolute difference between a pair of dice is 2?",
             options: ["1/6", "1/9", "2/9", "5/36"],
-            correctIndex: 3 // 2/9
+            correctIndex: 2 // 2/9
         }
     ];
 
