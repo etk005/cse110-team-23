@@ -12,16 +12,20 @@ export class DieMiniGameScreenController extends ScreenController {
         this.model = new DieMiniGameScreenModel();
         
         this.view = new (DieMiniGameScreenView as any)(
+            // onMenuClick: returns to menu anytime
             () => {
                 screenSwitcher.switchToScreen({ type: "menu" });
             },
+            // onAnswerClick:
             (selectedIndex: number) => {
                 this.model.answerCurrentQuestion(selectedIndex);
-                if (this.model.isGameOver()) {
-                    screenSwitcher.switchToScreen({ type: "menu" });
-                } else {
-                    this.updateView();
-                }
+                
+                // Always update view so if it's game over, 
+                // it draws the "Minigame Complete" summary screen!
+                this.updateView();
+
+                // Optional: If you want the menu button to work 
+                // when game is over, the existing Menu button already does this.
             }
         );
         
@@ -37,8 +41,11 @@ export class DieMiniGameScreenController extends ScreenController {
 
     private updateView(): void {
         const question = this.model.getCurrentQuestion();
+        const currentNum = this.model.getCurrentQuestionNumber();
+        const total = this.model.getTotalQuestions();
+        
         this.view.renderGame(
-            `Question ${this.model.getScore() + 1} of ${this.model.getTotalQuestions()}`, 
+            `Question ${currentNum} of ${total}`, 
             this.model.getScore(), 
             question
         );

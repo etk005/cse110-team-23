@@ -50,6 +50,10 @@ export class DieMiniGameScreenModel {
         return this.questions[this.currentQuestionIndex] ?? null;
     }
 
+    public getCurrentQuestionNumber(): number {
+        return this.currentQuestionIndex + 1;
+    }
+
     public answerCurrentQuestion(selectedIndex: number): boolean {
         const current = this.getCurrentQuestion();
         if (!current) return false;
