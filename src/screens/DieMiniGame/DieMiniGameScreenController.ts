@@ -29,8 +29,6 @@ export class DieMiniGameScreenController extends ScreenController {
             }
         );
         
-        // Call startGame right away to initialize the first question
-        this.startGame();
     }
 
     public startGame(): void {
