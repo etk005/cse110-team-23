@@ -23,8 +23,8 @@ export class DieMiniGameScreenModel {
         },
         {
             question: "What is the probability where one die is a factor of the other?",
-            options: ["5/18", "7/18", "4/9", "1/2"],
-            correctIndex: 1 // 7/18
+            options: ["5/18", "11/18", "4/9", "1/2"],
+            correctIndex: 1 // 11/18
         },
         {
             question: "What is the probability that the absolute difference between a pair of dice is 2?",
