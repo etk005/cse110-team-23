@@ -19,23 +19,6 @@ const SUIT_SYMBOLS: Record<Suit, string> = {
     clubs: "\u2663",
 };
 
-function formatProbability(value: number): string {
-    const denominators = [2, 4, 8, 16];
-    for (const denominator of denominators) {
-        const numerator = Math.round(value * denominator);
-        if (Math.abs(value * denominator - numerator) < 1e-8) {
-            if (numerator === 0) {
-                return "0";
-            }
-            if (numerator === denominator) {
-                return "1";
-            }
-            return `${numerator}/${denominator}`;
-        }
-    }
-    return value.toFixed(2);
-}
-
 export class GameScreenView implements View {
     private group: Konva.Group;
     private onAnswer: (answer: string) => void;
@@ -214,7 +197,7 @@ export class GameScreenView implements View {
         // Small hint under the input
         const range = state.probabilityRange;
         const hintText = range
-            ? `Hint: the probability is between ${formatProbability(range.low)} and ${formatProbability(range.high)}.`
+            ? `Hint: the probability is between ${range.low} and ${range.high}.`
             : "Enter a fraction or decimal, like 1/4 or 0.25.";
         probabilityPanel.add(
             new Konva.Text({
