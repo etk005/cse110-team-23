@@ -67,7 +67,7 @@ export class DieMiniGameScreenView implements View {
     private createTitle(): Konva.Group {
         const title = new Konva.Group({ y: c.TITLE_Y });
         const node = new Konva.Text({
-            text: "Dice Minigame Challenge",
+            text: "Die Minigame Challenge",
             fontSize: c.TITLE_FONT_SIZE,
             fontFamily: "Georgia",
             fontStyle: "bold",
