@@ -11,7 +11,12 @@ export class DieMiniGameScreenController extends ScreenController {
         super();
         this.model = new DieMiniGameScreenModel();
         
-        this.view = new (DieMiniGameScreenView as any)(
+        this.view = new DieMiniGameScreenView(
+            // 1st argument: onMenuClick
+            () => {
+                screenSwitcher.switchToScreen({ type: "menu" });
+            },
+            // 2nd argument: onAnswerClick
             (selectedIndex: number) => {
                 this.model.answerCurrentQuestion(selectedIndex);
                 if (this.model.isGameOver()) {
@@ -19,9 +24,6 @@ export class DieMiniGameScreenController extends ScreenController {
                 } else {
                     this.updateView();
                 }
-            },
-            () => {
-                screenSwitcher.switchToScreen({ type: "menu" });
             }
         );
         
