@@ -37,7 +37,8 @@ export class DieMiniGameScreenModel {
     private score = 0;
 
     constructor() {
-        this.resetGame();
+        this.currentQuestionIndex = 0;
+        this.score = 0;
     }
 
     public resetGame(): void {
@@ -46,7 +47,7 @@ export class DieMiniGameScreenModel {
     }
 
     public getCurrentQuestion(): Question | null {
-        return this.questions[this.currentIndex] ?? null;
+        return this.questions[this.currentQuestionIndex] ?? null;
     }
 
     public answerCurrentQuestion(selectedIndex: number): boolean {

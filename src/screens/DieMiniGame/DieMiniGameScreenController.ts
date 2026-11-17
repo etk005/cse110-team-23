@@ -11,12 +11,10 @@ export class DieMiniGameScreenController extends ScreenController {
         super();
         this.model = new DieMiniGameScreenModel();
         
-        this.view = new DieMiniGameScreenView(
-            // 1st argument: onMenuClick
+        this.view = new (DieMiniGameScreenView as any)(
             () => {
                 screenSwitcher.switchToScreen({ type: "menu" });
             },
-            // 2nd argument: onAnswerClick
             (selectedIndex: number) => {
                 this.model.answerCurrentQuestion(selectedIndex);
                 if (this.model.isGameOver()) {
@@ -27,7 +25,8 @@ export class DieMiniGameScreenController extends ScreenController {
             }
         );
         
-        this.updateView();
+        // Call startGame right away to initialize the first question
+        this.startGame();
     }
 
     public startGame(): void {
@@ -39,7 +38,7 @@ export class DieMiniGameScreenController extends ScreenController {
     private updateView(): void {
         const question = this.model.getCurrentQuestion();
         this.view.renderGame(
-            `Question`, 
+            `Question ${this.model.getScore() + 1} of ${this.model.getTotalQuestions()}`, 
             this.model.getScore(), 
             question
         );
