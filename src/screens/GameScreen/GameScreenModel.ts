@@ -251,13 +251,13 @@ export class GameScreenModel {
         return "bought";
     }
 
-    /** Returns the quarter-sized probability band containing p. */
+    /** Returns a wider, overlapping probability band containing p. */
     private buildProbabilityRange(p: number): { low: number; high: number } {
         const buckets = [
-            { low: 0, high: 1/4 },
-            { low: 1/4, high: 1/2 },
-            { low: 1/2, high: 3/4 },
-            { low: 3/4, high: 1 }
+            { low: 0, high: 0.4 },
+            { low: 0.2, high: 0.6 },
+            { low: 0.4, high: 0.8 },
+            { low: 0.6, high: 1 }
         ];
         for (const bucket of buckets) {
             if (p >= bucket.low && p < bucket.high) {
