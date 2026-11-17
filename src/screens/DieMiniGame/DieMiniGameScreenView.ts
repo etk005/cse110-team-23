@@ -116,19 +116,18 @@ export class DieMiniGameScreenView implements View {
         // Question or Finished State
         const boxY = panelY + 100;
         if (!question) {
-            
+            // Finished State
             let message = "Minigame Complete!";
             if (score === 5) message = "Perfect Score! Dice Master! 🎲";
             else if (score >= 3) message = "Great Job! Probability Pro!";
             else message = "Good Effort! Try Again!";
 
-            // Finished State
             this.content.add(new Konva.Text({
                 x: c.LEFT_X,
                 y: boxY + 50,
                 width: c.LEFT_WIDTH,
-                text: `Minigame Complete!\nFinal Score: ${score}`,
-                fontSize: 24,
+                text: `${message}\nFinal Score: ${score} / 5`,
+                fontSize: 22,
                 fontFamily: "Arial",
                 fontStyle: "bold",
                 fill: COLORS.text,
