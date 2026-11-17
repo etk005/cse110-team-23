@@ -10,17 +10,12 @@ export class MenuScreenView implements View {
      * @param onRiskRewardClick   Called when RISK / REWARD is clicked
      * @param onDieMiniGameClick  Called when DIE MINIGAME is clicked
      */
-
     constructor(
         onStartClick: () => void, 
         onRiskRewardClick: () => void,
         onDieMiniGameClick: () => void
     ) {
         this.group = new Konva.Group({ visible: true });
-
-    constructor(onStartClick: () => void, onRiskRewardClick: () => void, onSignOutClick: () => void) {
-        this.group = new Konva.Group({ visible: false });
-
         const c = MENU_SCREEN_CONSTANTS;
 
         const title = new Konva.Text({
@@ -111,11 +106,6 @@ export class MenuScreenView implements View {
         const dieOffsetY = c.BUTTON_HEIGHT * 2.6;
         const dieGroup = new Konva.Group({ y: dieOffsetY });
         dieGroup.add(new Konva.Rect({
-
-        const signOutOffset = c.BUTTON_HEIGHT * 1.3 * 2;
-        const signOutGroup = new Konva.Group({ y: signOutOffset });
-        signOutGroup.add(new Konva.Rect({
-
             x: (STAGE_WIDTH - c.BUTTON_WIDTH) / 2,
             y: c.BUTTON_Y,
             width: c.BUTTON_WIDTH,
@@ -125,34 +115,19 @@ export class MenuScreenView implements View {
             stroke: COLORS.buttonDark,
             strokeWidth: c.BUTTON_STROKE,
         }));
-
         const dieText = new Konva.Text({
             x: STAGE_WIDTH / 2,
             y: c.BUTTON_TEXT_Y,
             text: "DIE MINIGAME",
-
-        const signOutText = new Konva.Text({
-            x: STAGE_WIDTH / 2,
-            y: c.BUTTON_TEXT_Y,
-            text: "SIGN OUT",
-
             fontSize: c.BUTTON_FONT_SIZE,
             fontFamily: "Arial",
             fill: COLORS.text,
             align: "center",
         });
-
         dieText.offsetX(dieText.width() / 2);
         dieGroup.add(dieText);
         dieGroup.on("click tap", onDieMiniGameClick);
         this.group.add(dieGroup);
-
-        // Center the text on x by shifting it left by half its width
-        signOutText.offsetX(signOutText.width() / 2);
-        signOutGroup.add(signOutText);
-        signOutGroup.on("click tap", onSignOutClick);
-        this.group.add(signOutGroup);
-
     }
 
     show(): void {

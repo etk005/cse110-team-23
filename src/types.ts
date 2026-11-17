@@ -11,6 +11,7 @@ export type Screen =
     | { type: "result"; won: boolean; points: number }
     | { type: "levels" }
     | { type: "riskReward" } // Risk/Reward minigame; starts a fresh game each time
+    | { type: "dieMiniGame" } // dieMiniGame minigame; starts a fresh game each time
     | { type: "loading"; loader: Loader };
 
 /** 

@@ -69,11 +69,6 @@ const PROBABILITY_PANEL_HEIGHT = (H * 7) / 30;
 const GUESS_PANEL_Y = PROBABILITY_PANEL_Y + PROBABILITY_PANEL_HEIGHT + PANEL_GAP;
 const GUESS_PANEL_HEIGHT = H / 6;
 
-// Bottom "Resources" bar, pinned to the bottom of the stage.
-const RESOURCES_BAR_HEIGHT = H / 10;
-const RESOURCES_BAR_Y = H - RESOURCES_BAR_HEIGHT - H / 50;
-const BUTTON_HEIGHT = H / 18;
-
 export const GAME_SCREEN_CONSTANTS = {
     MARGIN: W / 32,
     HEADER_Y: H / 30,
@@ -108,25 +103,9 @@ export const GAME_SCREEN_CONSTANTS = {
     PANEL_HINT_TEXT: "#6b6b5e",
     PANEL_ROW_Y: H / 10, // the input + Submit row
 
-    // just under the visible card (card.png has transparent padding below it)
-    REMAINING_PANEL_Y: CARD_Y + VISIBLE_CARD_BOTTOM_IN_IMAGE + H / 50,
+    REMAINING_PANEL_Y: CARD_Y + CARD_HEIGHT + H / 36,
     REMAINING_PANEL_WIDTH: (W * 2) / 7,
     REMAINING_PANEL_HEIGHT: H / 7,
-    REMAINING_PANEL_X: LOGO_X,
-    OUTLINE_BUTTON_FILL: "#fffdf4",
-    OUTLINE_BUTTON_BORDER: "#d9d0b8",
-
-    // "View Possible Cards" popup
-    MODAL_WIDTH: (W * 5) / 6,
-    MODAL_HEIGHT: H * 0.85,
-    MODAL_BACKDROP: "rgba(0, 0, 0, 0.55)",
-    // 13 per row (one suit per row): a full 52-card deck fits in 4 rows above the Close button
-    MINI_CARD_WIDTH: W / 18,
-    MINI_CARD_HEIGHT: H / 7.5,
-    MINI_CARD_GAP: W / 160,
-    MINI_CARD_FONT_SIZE: H / 24,
-    MINI_CARD_RED: "#b62335",
-    MINI_CARD_BLACK: "#1a1a1a",
 
     INFO_PANEL_Y,
     INFO_PANEL_HEIGHT,
@@ -141,15 +120,7 @@ export const GAME_SCREEN_CONSTANTS = {
     SUBMIT_WIDTH: W / 12,
     FEEDBACK_FONT_SIZE: H / 45,
 
-    // Menu / Next sit just above the resources bar
-    FOOTER_Y: RESOURCES_BAR_Y - BUTTON_HEIGHT - H / 40,
-
-    RESOURCES_BAR_X: W / 32,
-    RESOURCES_BAR_Y,
-    RESOURCES_BAR_WIDTH: W - W / 16,
-    RESOURCES_BAR_HEIGHT,
-    RESOURCES_TITLE_FONT_SIZE: H / 38,
-    RESOURCES_BUTTON_GAP: W / 110,
+    FOOTER_Y: (H * 9) / 10,
 
     STATS_X: (W * 3) / 4,
     RESOURCES_X: (W * 5) / 12, // coins and score, left of strikes/progress
@@ -158,7 +129,7 @@ export const GAME_SCREEN_CONSTANTS = {
     STATS_FONT_SIZE: H / 34,
 
     // Button sizes. The views center each row, so only sizes and gaps live here.
-    BUTTON_HEIGHT,
+    BUTTON_HEIGHT: H / 18,
     BUTTON_FONT_SIZE: H / 43,
     BUTTON_RADIUS: H / 75,
     BUTTON_STROKE: H / 200,
@@ -211,7 +182,7 @@ export const RESULTS_SCREEN_CONSTANTS = {
     BUTTON_FONT_SIZE: H / 33,
 };
 
-// Left column holds the stats panel and card grid; the calculations panel sits to its right
+// Left column holds the title, stats panel and card grid (right side is left free)
 const RR_LEFT_X = W / 36;
 const RR_LEFT_WIDTH = W * 0.57;
 
@@ -256,34 +227,6 @@ export const RISK_REWARD_SCREEN_CONSTANTS = {
     MENU_BUTTON_STROKE: GAME_SCREEN_CONSTANTS.BUTTON_STROKE,
     MENU_BUTTON_MARGIN: W / 40, // distance from the right and bottom edges
 
-    // Calculations panel (right column, beside the stats panel and grid)
-    CALC_X: RR_LEFT_X + RR_LEFT_WIDTH + W / 40,
-    CALC_WIDTH: W - (RR_LEFT_X + RR_LEFT_WIDTH + W / 40) - RR_LEFT_X,
-    CALC_PADDING: W / 60,
-    CALC_TITLE_FONT_SIZE: H / 30,
-    CALC_HINT_FONT_SIZE: H / 60,
-    CALC_LABEL_FONT_SIZE: H / 50,
-    CALC_FIELD_TOP: H / 8, // first field, measured from the panel top
-    CALC_FIELD_GAP: H / 9, // distance from one field to the next
-    CALC_INPUT_Y: H / 30, // input box, below its label
-    CALC_INPUT_HEIGHT: H / 18,
-    CALC_INPUT_FONT_SIZE: H / 43,
-    CALC_ERROR_FONT_SIZE: H / 70,
-    INPUT_FILL: "#f4efe6",
-    ERROR_COLOR: "#ffb3b3", // light red so errors read on the dark panel
-    // Below the three fields: Submit button, then a status message
-    // (and, later, the outcome buttons)
-    CALC_SUBMIT_Y: H / 8 + 3 * (H / 9) + H / 80,
-    CALC_BUTTON_HEIGHT: H / 18,
-    CALC_BUTTON_GAP: W / 80,
-    CALC_MESSAGE_FONT_SIZE: H / 48,
-    CALC_PANEL_HEIGHT: H * 0.7,
-    SUCCESS_COLOR: "#9be59f", // light green for "Correct" on the dark panel
-    LOCKED_CARD_OPACITY: 0.75, // face-down cards while answers aren't correct yet
-    // Flipped card faces
-    REVEALED_RISK_FILL: "#f7d9dc",
-    REVEALED_REWARD_FILL: "#dcefd6",
-
     // Colors
     CARD_FILL: "#fffdf4", // cream, also used for stat boxes
     CARD_STROKE: "#d9cfae", // tan border on cards and stat boxes
@@ -308,7 +251,3 @@ export const COLORS = {
     accent: "#f1c653",
     border: "#fffdf4",
 };
-
-export const STARTING_CHIPS = 10; // legacy chip setting; paid hints use shared coins
-
-export const COST_OF_CLUE = 3; // number of shared coins each paid hint costs
