@@ -278,6 +278,16 @@ export const RISK_REWARD_SCREEN_CONSTANTS = {
     CALC_BUTTON_GAP: W / 80,
     CALC_MESSAGE_FONT_SIZE: H / 48,
     CALC_PANEL_HEIGHT: H * 0.7,
+    // Quick Rules dropdown: a bar under the calculations panel that opens
+    // upward over it (left of the Menu button)
+    RULES_BAR_GAP: H / 60, // space between the calc panel and the bar
+    RULES_BAR_HEIGHT: H / 18,
+    RULES_BAR_FONT_SIZE: H / 45,
+    RULES_FONT_SIZE: H / 50,
+    RULES_PADDING: W / 70,
+    RULES_FILL: "#fbf6e6",
+    RULES_TEXT: "#2b2b2b",
+    RULES_NOTE: "#4c6b45",
     SUCCESS_COLOR: "#9be59f", // light green for "Correct" on the dark panel
     LOCKED_CARD_OPACITY: 0.75, // face-down cards while answers aren't correct yet
     // Flipped card faces

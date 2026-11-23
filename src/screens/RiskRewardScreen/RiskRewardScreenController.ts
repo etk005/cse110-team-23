@@ -153,7 +153,7 @@ export class RiskRewardScreenController extends ScreenController {
             this.resources.earnCoins(banked);
         }
         this.setMessage(
-            `You cashed out ${banked} chips for ${banked} coins! You now have ${this.resources.getCoins()} coins.`,
+            `You cashed out ${banked} chips for ${banked} coins! Total game coins: ${this.resources.getCoins()}.`,
             "success"
         );
         this.refresh();
