@@ -3,6 +3,7 @@ import { supabase } from "../../lib/supabase.ts";
 import { ScreenController } from "../../types.ts";
 import type { ScreenSwitcher } from "../../types.ts";
 import { MenuScreenView } from "./MenuScreenView.ts";
+import { PlayerResources } from "../../game/playerResources.ts";
 
 /** 
  * Controls the main menu screen and routes the Start button to the game. 
@@ -11,7 +12,7 @@ export class MenuScreenController extends ScreenController {
     private view: MenuScreenView;
     private screenSwitcher: ScreenSwitcher;
 
-    constructor(screenSwitcher: ScreenSwitcher) {
+    constructor(screenSwitcher: ScreenSwitcher, private resources: PlayerResources) {
         super();
         this.screenSwitcher = screenSwitcher;
         this.view = new MenuScreenView(
@@ -23,6 +24,12 @@ export class MenuScreenController extends ScreenController {
                 this.screenSwitcher.switchToScreen({ type: "auth" });
             }
         );
+        this.refreshCoins();
+        this.resources.onChange(this.refreshCoins.bind(this));
+
+    }
+    private refreshCoins(): void{
+        this.view.updateCoins(this.resources.getCoins());
     }
 
     private handleStartClick(): void {
