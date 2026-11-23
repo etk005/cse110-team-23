@@ -365,21 +365,20 @@ describe("GameScreenController", () => {
             );
         });
 
-        it("allows buying a new range on the next question while keeping cards unlocked", () => {
+        it("resets both hints on the next question so they can be bought again", () => {
             const coinsBefore = resources.getCoins();
             viewMock.onChooseHint!("cards");
             viewMock.onChooseHint!("range");
             viewMock.onAnswer!(correctAnswer());
             viewMock.onNext!();
-            expect(currentState().canViewRemainingCards).toBe(true);
+            expect(currentState().canViewRemainingCards).toBe(false);
             expect(currentState().probabilityRange).toBeNull();
             expect(resources.getCoins()).toBe(coinsBefore - 2 * COST_OF_CLUE);
 
             viewMock.onBuyInfo!();
-            viewMock.onChooseHint!("range");
+            viewMock.onChooseHint!("cards");
 
             expect(currentState().canViewRemainingCards).toBe(true);
-            expect(currentState().probabilityRange).not.toBeNull();
             expect(resources.getCoins()).toBe(coinsBefore - 3 * COST_OF_CLUE);
         });
 
