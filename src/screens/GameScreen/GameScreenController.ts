@@ -108,21 +108,24 @@ export class GameScreenController extends ScreenController {
             this.updateView("Not enough coins!");
             return;
         }
-        const result = this.model.buyHint(kind);
-        try{
         const previousBalance = this.resources.getCoins();
-        const savedBalance = await saveCoins(previousBalance, previousBalance - COST_OF_CLUE);
-        this.resources.setCoins(savedBalance);
-        this.updateView(this.getBuyInfoMessage(result));
+        let savedBalance: number;
+        try{
+        savedBalance = await saveCoins(previousBalance, previousBalance - COST_OF_CLUE);
+        
         }
         catch (error) {
             console.error("Failed to save hint purchase", error);
             this.updateView("Could not buy hint. Please try again.");
             return;
         }
+        this.resources.setCoins(savedBalance);
+        const result = this.model.buyHint(kind);
         if (result !== "bought") {
             return;
         }
+        this.updateView(this.getBuyInfoMessage(result));
+        
         if (kind === "cards") {
             this.view.showRemainingCards(
                 this.model.getState().remainingPossibleCards
