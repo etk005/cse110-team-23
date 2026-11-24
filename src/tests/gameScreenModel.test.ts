@@ -463,15 +463,23 @@ describe("GameScreenModel", () => {
             expect(model.buyHint("cards")).toBe("already_bought");
         });
 
-        it("clears the range on the next question but keeps remaining cards unlocked", () => {
+        it("clears both hints on the next question", () => {
             model.buyHint("cards");
             model.buyHint("range");
             model.submitAnswer(correctAnswer());
             model.nextQuestion();
 
             const state = model.getState();
-            expect(state.canViewRemainingCards).toBe(true);
+            expect(state.canViewRemainingCards).toBe(false);
             expect(state.probabilityRange).toBeNull();
+        });
+
+        it("lets the remaining-cards hint be bought again on the next question", () => {
+            model.buyHint("cards");
+            model.submitAnswer(correctAnswer());
+            model.nextQuestion();
+
+            expect(model.buyHint("cards")).toBe("bought");
         });
     });
 });
