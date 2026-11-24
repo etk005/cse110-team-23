@@ -6,11 +6,16 @@ export class MenuScreenView implements View {
     private group: Konva.Group;
 
     /**
-     * @param onStartClick      Called when START GAME is clicked
-     * @param onRiskRewardClick Called when RISK / REWARD is clicked
+     * @param onStartClick        Called when START GAME is clicked
+     * @param onRiskRewardClick   Called when RISK / REWARD is clicked
+     * @param onDieMiniGameClick  Called when DIE MINIGAME is clicked
      */
-    constructor(onStartClick: () => void, onRiskRewardClick: () => void, onSignOutClick: () => void) {
-        this.group = new Konva.Group({ visible: false });
+    constructor(
+        onStartClick: () => void, 
+        onRiskRewardClick: () => void,
+        onDieMiniGameClick: () => void
+    ) {
+        this.group = new Konva.Group({ visible: true });
         const c = MENU_SCREEN_CONSTANTS;
 
         const title = new Konva.Text({
@@ -70,9 +75,7 @@ export class MenuScreenView implements View {
 
         this.group.add(startButtonGroup);
 
-        // Risk/Reward minigame button, directly below Start.
-        // It reuses the Start button's positions and the whole group is shifted
-        // down by 1.3 button heights, leaving a small gap between the two.
+        // Risk/Reward minigame button
         const rrOffsetY = c.BUTTON_HEIGHT * 1.3;
         const riskRewardGroup = new Konva.Group({ y: rrOffsetY });
         riskRewardGroup.add(new Konva.Rect({
@@ -94,15 +97,15 @@ export class MenuScreenView implements View {
             fill: COLORS.text,
             align: "center",
         });
-        // Center the text on x by shifting it left by half its width
         riskRewardText.offsetX(riskRewardText.width() / 2);
         riskRewardGroup.add(riskRewardText);
         riskRewardGroup.on("click tap", onRiskRewardClick);
         this.group.add(riskRewardGroup);
 
-        const signOutOffset = c.BUTTON_HEIGHT * 1.3 * 2;
-        const signOutGroup = new Konva.Group({ y: signOutOffset });
-        signOutGroup.add(new Konva.Rect({
+        // Die Minigame button (shifted down by 2.6 button heights)
+        const dieOffsetY = c.BUTTON_HEIGHT * 2.6;
+        const dieGroup = new Konva.Group({ y: dieOffsetY });
+        dieGroup.add(new Konva.Rect({
             x: (STAGE_WIDTH - c.BUTTON_WIDTH) / 2,
             y: c.BUTTON_Y,
             width: c.BUTTON_WIDTH,
@@ -112,20 +115,19 @@ export class MenuScreenView implements View {
             stroke: COLORS.buttonDark,
             strokeWidth: c.BUTTON_STROKE,
         }));
-        const signOutText = new Konva.Text({
+        const dieText = new Konva.Text({
             x: STAGE_WIDTH / 2,
             y: c.BUTTON_TEXT_Y,
-            text: "SIGN OUT",
+            text: "DIE MINIGAME",
             fontSize: c.BUTTON_FONT_SIZE,
             fontFamily: "Arial",
             fill: COLORS.text,
             align: "center",
         });
-        // Center the text on x by shifting it left by half its width
-        signOutText.offsetX(signOutText.width() / 2);
-        signOutGroup.add(signOutText);
-        signOutGroup.on("click tap", onSignOutClick);
-        this.group.add(signOutGroup);
+        dieText.offsetX(dieText.width() / 2);
+        dieGroup.add(dieText);
+        dieGroup.on("click tap", onDieMiniGameClick);
+        this.group.add(dieGroup);
     }
 
     show(): void {
