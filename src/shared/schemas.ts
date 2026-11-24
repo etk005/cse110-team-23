@@ -16,9 +16,18 @@ export const levelManifestSchema = z.object({
 }).array();
 
 export const levelSchema = z.object({
-    id: z.number(),
+    id: z.number().int().positive(),
     name: z.string(),
-    deck: cardSchema.array(),
-    maxStrikes: z.number(),
-    questionsRequired: z.number()
+    deck: cardSchema.array()
+        .min(2, "deck needs at least 2 cards")
+        .refine(
+            (deck) => new Set(deck.map((card) => card.id)).size === deck.length,
+            "card ids must be unique"
+        )
+        .refine(
+            (deck) => new Set(deck.map((card) => `${card.suit}-${card.rank}`)).size === deck.length,
+            "a deck can't have the same card twice"
+        ),
+    maxStrikes: z.number().int().positive(),
+    questionsRequired: z.number().int().positive()
 });
