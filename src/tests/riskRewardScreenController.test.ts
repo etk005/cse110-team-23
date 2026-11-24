@@ -12,6 +12,7 @@ const viewMock = vi.hoisted(() => ({
     render: vi.fn(),
     setFieldFeedback: vi.fn(),
     clearInputs: vi.fn(),
+    setRulesOpen: vi.fn(),
 }));
 
 vi.mock("../screens/RiskRewardScreen/RiskRewardScreenView.ts", () => ({
@@ -22,6 +23,7 @@ vi.mock("../screens/RiskRewardScreen/RiskRewardScreenView.ts", () => ({
         render = viewMock.render;
         setFieldFeedback = viewMock.setFieldFeedback;
         clearInputs = viewMock.clearInputs;
+        setRulesOpen = viewMock.setRulesOpen;
         getInputValues = () => viewMock.inputs;
         show = vi.fn();
         hide = vi.fn();
@@ -122,6 +124,13 @@ describe("RiskRewardScreenController", () => {
 
         viewMock.handlers?.onMenu();
         expect(screens).toEqual([{ type: "menu" }]);
+    });
+
+    it("starts each new game with Quick Rules closed", () => {
+        expect(viewMock.setRulesOpen).toHaveBeenCalledWith(false);
+        viewMock.setRulesOpen.mockClear();
+        controller.startGame();
+        expect(viewMock.setRulesOpen).toHaveBeenCalledWith(false);
     });
 
     it("continue clears the inputs and starts a new round", () => {
