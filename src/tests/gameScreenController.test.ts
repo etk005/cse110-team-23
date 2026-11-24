@@ -30,6 +30,7 @@ const viewMock = vi.hoisted(() => ({
     onChooseHint: undefined as ((kind: HintKind) => void) | undefined,
     render: vi.fn(),
     updateResources: vi.fn(),
+    showCoinsSpent: vi.fn(),
     showRemainingCards: vi.fn(),
     show: vi.fn(),
     hide: vi.fn(),
@@ -53,6 +54,7 @@ vi.mock("../screens/GameScreen/GameScreenView.ts", () => ({
 
         render = viewMock.render;
         updateResources = viewMock.updateResources;
+        showCoinsSpent = viewMock.showCoinsSpent;
         showRemainingCards = viewMock.showRemainingCards;
         show = viewMock.show;
         hide = viewMock.hide;
@@ -252,6 +254,7 @@ describe("GameScreenController", () => {
                 probabilityRange: null,
             });
             expect(viewMock.showRemainingCards).not.toHaveBeenCalled();
+            expect(viewMock.showCoinsSpent).not.toHaveBeenCalled();
             expect(viewMock.render).toHaveBeenLastCalledWith(
                 expect.anything(), expect.anything(), "Choose a hint.", false
             );
@@ -278,6 +281,7 @@ describe("GameScreenController", () => {
                 expect(viewMock.updateResources).toHaveBeenLastCalledWith(
                     coinsBefore - COST_OF_CLUE, 0, 10
                 );
+                expect(viewMock.showCoinsSpent).toHaveBeenCalledExactlyOnceWith(COST_OF_CLUE);
                 expect(viewMock.render).toHaveBeenLastCalledWith(
                     expect.anything(), expect.anything(), "Clue bought!", false
                 );
@@ -322,6 +326,7 @@ describe("GameScreenController", () => {
                     expect(resources.getCoins()).toBe(balance);
                     expect(currentState()).toEqual(stateBefore);
                     expect(viewMock.showRemainingCards).not.toHaveBeenCalled();
+                    expect(viewMock.showCoinsSpent).not.toHaveBeenCalled();
                     expect(viewMock.render).toHaveBeenLastCalledWith(
                         expect.anything(), expect.anything(), "Not enough coins!", false
                     );
@@ -340,6 +345,7 @@ describe("GameScreenController", () => {
                 expect(resources.getCoins()).toBe(coinsAfterPurchase);
                 expect(currentState()).toEqual(stateAfterPurchase);
                 expect(viewMock.showRemainingCards).not.toHaveBeenCalled();
+                expect(viewMock.showCoinsSpent).toHaveBeenCalledExactlyOnceWith(COST_OF_CLUE);
                 expect(viewMock.render).toHaveBeenLastCalledWith(
                     expect.anything(), expect.anything(), "You already bought that hint.", false
                 );

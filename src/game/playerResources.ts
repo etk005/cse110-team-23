@@ -1,3 +1,5 @@
+import { number } from "zod";
+
 export const STARTING_COINS = 10;
 
 // points for clearing a level, minus a penalty for each strike
@@ -53,6 +55,13 @@ export class PlayerResources {
         }
 
         this.coins += amount;
+        this.notify();
+    }
+    /** Sets the coins at the beginning of the game
+     * @param coins : number of coins to set
+     */
+    setCoins(coins: number): void{
+        this.coins = coins;
         this.notify();
     }
 
