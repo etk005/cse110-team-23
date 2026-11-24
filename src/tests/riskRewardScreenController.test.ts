@@ -1,10 +1,17 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Screen, ScreenSwitcher } from "../types.ts";
+import { saveCoins } from "../lib/playerCoins.ts";
 import type {
     RiskRewardHandlers,
     RiskRewardViewState,
 } from "../screens/RiskRewardScreen/RiskRewardScreenView.ts";
 import type { CalcField } from "../screens/RiskRewardScreen/RiskRewardScreenModel.ts";
+
+vi.mock("../lib/playerCoins.ts", () => ({
+    saveCoins: vi.fn(),
+}));
+
+const saveCoinsMock = vi.mocked(saveCoins);
 
 const viewMock = vi.hoisted(() => ({
     handlers: undefined as RiskRewardHandlers | undefined,
@@ -59,12 +66,18 @@ describe("RiskRewardScreenController", () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
+        saveCoinsMock.mockReset();
+        saveCoinsMock.mockImplementation(async (_previousBalance, nextBalance) => nextBalance);
         viewMock.inputs = { risk: "", reward: "", expectedValue: "" };
         screens = [];
         const switcher: ScreenSwitcher = { switchToScreen: (screen) => screens.push(screen) };
         resources = new PlayerResources(10);
         controller = new RiskRewardScreenController(switcher, resources);
         controller.startGame();
+    });
+
+    afterEach(() => {
+        vi.restoreAllMocks();
     });
 
     it("starts locked with the player's coins shown", () => {
@@ -104,7 +117,7 @@ describe("RiskRewardScreenController", () => {
         expect(viewMock.setFieldFeedback).toHaveBeenLastCalledWith("risk", null);
     });
 
-    it("cashing out turns the chips into coins", () => {
+    it("cashing out turns the chips into coins", async () => {
         typeCorrectAnswers();
         viewMock.handlers?.onSubmit();
         flip("reward");
@@ -115,13 +128,33 @@ describe("RiskRewardScreenController", () => {
         expect(won).toBeGreaterThan(0);
         expect(lastState().message).toContain(`Reward +${won}`);
 
-        viewMock.handlers?.onCashOut();
+        await viewMock.handlers?.onCashOut();
+        expect(saveCoinsMock).toHaveBeenCalledExactlyOnceWith(10, 10 + won);
         expect(resources.getCoins()).toBe(10 + won);
         expect(lastState().phase).toBe("cashedOut");
         expect(lastState().coins).toBe(10 + won);
 
         viewMock.handlers?.onMenu();
         expect(screens).toEqual([{ type: "menu" }]);
+    });
+
+    it("keeps the chips available for a retry when the save fails", async () => {
+        saveCoinsMock.mockRejectedValueOnce(new Error("Save failed"));
+        vi.spyOn(console, "error").mockImplementation(() => {});
+        typeCorrectAnswers();
+        viewMock.handlers?.onSubmit();
+        flip("reward");
+        const won = lastState().chips;
+
+        await viewMock.handlers?.onCashOut();
+
+        expect(resources.getCoins()).toBe(10);
+        expect(lastState()).toMatchObject({ phase: "reward", chips: won, messageTone: "error" });
+
+        await viewMock.handlers?.onCashOut();
+
+        expect(resources.getCoins()).toBe(10 + won);
+        expect(lastState()).toMatchObject({ phase: "cashedOut", chips: 0 });
     });
 
     it("continue clears the inputs and starts a new round", () => {

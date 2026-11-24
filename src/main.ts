@@ -43,6 +43,7 @@ class App implements ScreenSwitcher {
 
         // One set of coins and score, shared by every screen that shows them
         const resources = new PlayerResources();
+        const loadPlayer = () => loadStartupScreen(resources);
 
         // Initialize the screen controllers
         this.menuController = new MenuScreenController(this, resources);
@@ -51,7 +52,7 @@ class App implements ScreenSwitcher {
         this.levelsController = new LevelsScreenController(this);
         this.loadingController = new LoadingScreenController(this);
         this.riskRewardController = new RiskRewardScreenController(this, resources);
-        this.authController = new AuthScreenController(this);
+        this.authController = new AuthScreenController(this, loadPlayer);
 
         // Add all screen views to the same layer
         this.layer.add(this.menuController.getView().getGroup());

@@ -7,6 +7,7 @@ import type { RiskRewardViewState } from "./RiskRewardScreenView.ts";
 import { PlayerResources } from "../../game/playerResources.ts";
 import { parseNumber, parseProbability } from "../../game/numberInput.ts";
 import type { ParseResult } from "../../game/numberInput.ts";
+import { loadCoins, saveCoins } from "../../lib/playerCoins.ts";
 
 const CALC_FIELDS: CalcField[] = ["risk", "reward", "expectedValue"];
 
@@ -22,7 +23,7 @@ export class RiskRewardScreenController extends ScreenController {
     // Status line shown in the calculations panel
     private message = "";
     private messageTone: RiskRewardViewState["messageTone"] = "info";
-
+    private cashoutPending = false;
     /**
      * @param screenSwitcher Used by the Menu buttons to leave the minigame
      * @param resources The player's coins; Cash Out turns minigame chips into coins
@@ -35,7 +36,9 @@ export class RiskRewardScreenController extends ScreenController {
         super();
         this.model = new RiskRewardScreenModel(random);
         this.view = new RiskRewardScreenView({
-            onMenu: () => screenSwitcher.switchToScreen({ type: "menu" }),
+            onMenu: () => {if (!this.cashoutPending){
+                screenSwitcher.switchToScreen({ type: "menu" });
+            }},
             onInputChange: (field, text) => this.handleInputChange(field, text),
             onSubmit: () => this.submitAnswers(),
             onFlip: (index) => this.flipCard(index),
@@ -144,24 +147,38 @@ export class RiskRewardScreenController extends ScreenController {
     }
 
     /** Turns the temporary chips into coins and ends the minigame. */
-    cashOut(): void {
-        if (this.model.getPhase() !== "reward") {
+    async cashOut(): Promise<void> {
+        if (this.cashoutPending || this.model.getPhase() !== "reward") {
             return;
         }
-        const banked = this.model.cashOut();
-        if (banked > 0) {
-            this.resources.earnCoins(banked);
+        const banked = this.model.getChips();
+        const previousBalance = this.resources.getCoins();
+        let savedBalance: number;
+        this.cashoutPending = true;
+        try{
+            savedBalance = await saveCoins(previousBalance, previousBalance + banked);
         }
+        catch (error) {
+            console.error("Could not save cashout", error);
+            this.setMessage("Could not cash out. Please try again.", "error");
+            this.refresh(); 
+            return;
+        } finally{
+            this.cashoutPending = false;
+        }
+        this.model.cashOut();
+        this.resources.setCoins(savedBalance);
         this.setMessage(
             `You cashed out ${banked} chips for ${banked} coins! Total game coins: ${this.resources.getCoins()}.`,
             "success"
         );
         this.refresh();
+
     }
 
     /** Next round with the remaining deck: chips kept, inputs cleared, cards locked again. */
     continueRound(): void {
-        if (!this.model.continueRound()) {
+        if (this.cashoutPending || !this.model.continueRound()) {
             return;
         }
         this.view.clearInputs();
