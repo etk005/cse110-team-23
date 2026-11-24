@@ -61,6 +61,10 @@ export class RiskRewardScreenView implements View {
     private inputs = new Map<CalcField, HTMLInputElement>();
     // Submit button, status message and outcome buttons; redrawn on every render()
     private calcActions: Konva.Group;
+    // Quick Rules dropdown body and the arrow on its bar
+    private rulesBody!: Konva.Group;
+    private rulesArrow!: Konva.Text;
+    private rulesOpen = false;
 
     /** @param handlers What each button / input does (see RiskRewardHandlers) */
     constructor(private handlers: RiskRewardHandlers) {
@@ -87,6 +91,122 @@ export class RiskRewardScreenView implements View {
         this.calcActions = new Konva.Group({ x: c.CALC_PADDING, y: c.CALC_SUBMIT_Y });
         calcPanel.add(this.calcActions);
         this.group.add(calcPanel);
+
+        // Drawn last so the open rules sit on top of the calc panel
+        this.group.add(this.createRules());
+    }
+
+    /** The rule lines; the Reward amount follows the deck's card values. */
+    private static rulesText(): { rules: string; formula: string } {
+        const multi = REWARD_VALUES.length > 1;
+        const value = REWARD_VALUES[0] ?? 1;
+        const reward = multi
+            ? `Flip a Reward card to earn its chips (${REWARD_VALUES.map((v) => `+${v}`).join(", ")}).`
+            : `Flip a Reward card to earn ${value} chip${value === 1 ? "" : "s"}.`;
+        const rules = [
+            "Calculate the probabilities and expected value to unlock a flip.",
+            `${reward} A Risk card ends your game.`,
+            "After each Reward, choose to Cash Out and keep your winnings or Continue to earn more.",
+            "If you reveal a Risk card, you lose your current minigame chips, but keep your existing coins.",
+            "Cards aren't replaced, so the probabilities change after each flip.",
+        ].map((rule, i) => `${i + 1}. ${rule}`).join("\n");
+        const gain = multi ? "Σ P(+v) × v" : `P(Reward) × ${value}`;
+        return { rules, formula: `EV = ${gain} − P(Risk) × Current Minigame Chips` };
+    }
+
+    /** "QUICK RULES" bar under the calc panel; clicking it opens the rules above it. */
+    private createRules(): Konva.Group {
+        const width = c.CALC_WIDTH - c.MENU_BUTTON_WIDTH - c.CALC_BUTTON_GAP;
+        const barY = c.STATS_PANEL_Y + c.CALC_PANEL_HEIGHT + c.RULES_BAR_GAP;
+        const root = new Konva.Group({ x: c.CALC_X });
+        const textWidth = width - 2 * c.RULES_PADDING;
+        const { rules, formula } = RiskRewardScreenView.rulesText();
+
+        // Body: built top-down from y = 0, then moved so it ends right above the bar
+        this.rulesBody = new Konva.Group({ visible: false });
+        const background = new Konva.Rect({
+            width,
+            fill: c.RULES_FILL,
+            stroke: c.PANEL_STROKE,
+            strokeWidth: 2,
+            cornerRadius: c.PANEL_RADIUS,
+        });
+        this.rulesBody.add(background);
+        let y = c.RULES_PADDING;
+        const lines: [string, string, number][] = [
+            ["QUICK RULES", c.RULES_TEXT, c.RULES_FONT_SIZE],
+            [rules, c.RULES_TEXT, c.RULES_FONT_SIZE],
+            [formula, c.RULES_TEXT, c.RULES_FONT_SIZE],
+            ["Expected additional chips for one more flip, then stopping.", c.RULES_NOTE, c.RULES_FONT_SIZE * 0.9],
+        ];
+        for (const [text, fill, fontSize] of lines) {
+            const node = new Konva.Text({
+                x: c.RULES_PADDING,
+                y,
+                width: textWidth,
+                text,
+                fontSize,
+                fontFamily: "Arial",
+                lineHeight: 1.35,
+                fill,
+            });
+            this.rulesBody.add(node);
+            y += node.height() + c.RULES_FONT_SIZE * 0.6;
+        }
+        const bodyHeight = y + c.RULES_PADDING - c.RULES_FONT_SIZE * 0.6;
+        background.height(bodyHeight);
+        this.rulesBody.y(barY - c.RULES_BAR_GAP - bodyHeight);
+        root.add(this.rulesBody);
+
+        // Bar: the dropdown toggle
+        const bar = new Konva.Group({ y: barY });
+        bar.add(new Konva.Rect({
+            width,
+            height: c.RULES_BAR_HEIGHT,
+            fill: c.PANEL_FILL,
+            stroke: c.PANEL_STROKE,
+            strokeWidth: 2,
+            cornerRadius: c.PANEL_RADIUS,
+        }));
+        bar.add(new Konva.Text({
+            x: c.RULES_PADDING,
+            height: c.RULES_BAR_HEIGHT,
+            text: "QUICK RULES",
+            fontSize: c.RULES_BAR_FONT_SIZE,
+            fontFamily: "Arial",
+            fontStyle: "bold",
+            letterSpacing: 1,
+            verticalAlign: "middle",
+            fill: COLORS.text,
+        }));
+        this.rulesArrow = new Konva.Text({
+            x: width - c.RULES_PADDING - c.RULES_BAR_FONT_SIZE,
+            width: c.RULES_BAR_FONT_SIZE,
+            height: c.RULES_BAR_HEIGHT,
+            text: "▲",
+            fontSize: c.RULES_BAR_FONT_SIZE,
+            align: "center",
+            verticalAlign: "middle",
+            fill: COLORS.accent,
+        });
+        bar.add(this.rulesArrow);
+        this.makeClickable(bar, () => this.setRulesOpen(!this.rulesOpen));
+        root.add(bar);
+        return root;
+    }
+
+    /** Opens/closes the rules. The HTML inputs would sit on top of them, so they hide while open. */
+    setRulesOpen(open: boolean): void {
+        this.rulesOpen = open;
+        this.rulesBody.visible(open);
+        this.rulesArrow.text(open ? "▼" : "▲");
+        this.positionOverlay();
+        this.group.getLayer()?.draw();
+    }
+
+    /** Whether the rules dropdown is open. */
+    isRulesOpen(): boolean {
+        return this.rulesOpen;
     }
 
     /** Right-hand panel: title, short instructions and one labelled slot per input. */
@@ -209,7 +329,7 @@ export class RiskRewardScreenView implements View {
         }
         const stage = this.group.getStage();
         const visible = this.group.visible() && stage !== null;
-        this.overlay.style.display = visible ? "block" : "none";
+        this.overlay.style.display = visible && !this.rulesOpen ? "block" : "none";
         if (!visible || !stage) {
             return;
         }
@@ -349,7 +469,7 @@ export class RiskRewardScreenView implements View {
                 ? REWARD_VALUES.map((value): [string, number] => [`+${value} REWARDS LEFT`, stats.rewardCounts[value] ?? 0])
                 : []),
             ["CURRENT MINIGAME CHIPS", stats.chips],
-            ["YOUR COINS", stats.coins],
+            ["TOTAL GAME COINS", stats.coins],
         ];
         // Box width is whatever fits STATS_COLUMNS boxes (plus gaps) inside
         // the panel's padding; panel height grows with the number of rows.
@@ -522,8 +642,8 @@ export class RiskRewardScreenView implements View {
 
     /**
      * Bottom of the calculations panel: Submit while calculating, then a status
-     * message, then Cash Out / Continue after a Reward, or Back to Menu after
-     * cashing out.
+     * message, then Cash Out / Continue after a Reward or Back to Menu once
+     * the game is over.
      */
     private renderActions(stats: RiskRewardViewState): void {
         this.calcActions.destroyChildren();
@@ -565,7 +685,7 @@ export class RiskRewardScreenView implements View {
                     this.createActionButton("Continue", half + c.CALC_BUTTON_GAP, y, half, "secondary", this.handlers.onContinue)
                 );
             }
-        } else if (stats.phase === "cashedOut") {
+        } else if (stats.phase === "lost" || stats.phase === "cashedOut") {
             this.calcActions.add(this.createActionButton("Back to Menu", 0, y, width, "primary", this.handlers.onMenu));
         }
     }

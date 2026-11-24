@@ -21,7 +21,7 @@ export const REWARD_CARD_COUNT = Object.values(REWARD_CARD_VALUES).reduce((sum, 
  * - "calculating": entering P(Risk), P(Reward) and expected value; cards locked
  * - "flipping":    all three answers were correct; the player may flip one card
  * - "reward":      a Reward was flipped; choose Cash Out or Continue
- * - "lost":        a Risk was flipped; game over (unbanked chips are never paid out)
+ * - "lost":        a Risk was flipped; temporary chips are gone, game over
  * - "cashedOut":   the player banked their chips; game over
  */
 export type RiskRewardPhase = "calculating" | "flipping" | "reward" | "lost" | "cashedOut";
@@ -191,7 +191,7 @@ export class RiskRewardScreenModel {
     /**
      * Flips the card at grid position `index`. Only allowed in the "flipping"
      * phase and on a card that hasn't been flipped. A Reward adds its value in
-     * chips; a Risk ends the game.
+     * chips; a Risk loses every temporary chip and ends the game.
      * @returns the revealed card, or null if the flip isn't allowed
      */
     flip(index: number): RiskRewardCard | null {
@@ -204,6 +204,7 @@ export class RiskRewardScreenModel {
             this.chips += card.value;
             this.phase = "reward";
         } else {
+            this.chips = 0;
             this.phase = "lost";
         }
         return { ...card };

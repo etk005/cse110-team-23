@@ -138,7 +138,7 @@ export class RiskRewardScreenController extends ScreenController {
                 "success"
             );
         } else {
-            this.setMessage("Risk! Game over.", "error");
+            this.setMessage("Risk! You lost all your minigame chips. Game over.", "error");
         }
         this.refresh();
     }
@@ -153,7 +153,7 @@ export class RiskRewardScreenController extends ScreenController {
             this.resources.earnCoins(banked);
         }
         this.setMessage(
-            `You cashed out ${banked} chips for ${banked} coins! You now have ${this.resources.getCoins()} coins.`,
+            `You cashed out ${banked} chips for ${banked} coins! Total game coins: ${this.resources.getCoins()}.`,
             "success"
         );
         this.refresh();

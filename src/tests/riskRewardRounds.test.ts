@@ -158,3 +158,38 @@ describe("Risk/Reward reward outcome (#17)", () => {
         expect(model.getPhase()).toBe("calculating");
     });
 });
+
+describe("Risk/Reward risk outcome (#18)", () => {
+    it("loses all temporary chips and ends the game", () => {
+        const model = new RiskRewardScreenModel();
+        unlock(model);
+        model.flip(indexOf(model, "reward"));
+        model.continueRound();
+        unlock(model);
+
+        expect(model.flip(indexOf(model, "risk"))).toEqual({ type: "risk" });
+        expect(model.getChips()).toBe(0);
+        expect(model.getPhase()).toBe("lost");
+    });
+
+    it("blocks further flips, continuing and cashing out", () => {
+        const model = new RiskRewardScreenModel();
+        unlock(model);
+        model.flip(indexOf(model, "risk"));
+        expect(model.flip(indexOf(model, "reward"))).toBeNull();
+        expect(model.continueRound()).toBe(false);
+        expect(model.cashOut()).toBe(0);
+        model.checkAnswers(correctInputs(model));
+        expect(model.getPhase()).toBe("lost");
+    });
+
+    it("starting again resets everything", () => {
+        const model = new RiskRewardScreenModel();
+        unlock(model);
+        model.flip(indexOf(model, "risk"));
+        model.start();
+        expect(model.getPhase()).toBe("calculating");
+        expect(model.getTotalCount()).toBe(21);
+        expect(model.getCardFaces().every((face) => face === null)).toBe(true);
+    });
+});
