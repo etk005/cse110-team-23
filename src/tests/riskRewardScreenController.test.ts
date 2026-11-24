@@ -138,4 +138,19 @@ describe("RiskRewardScreenController", () => {
         const rewardsLeft = Object.values(lastState().rewardCounts).reduce((a, b) => a + b, 0);
         expect(rewardsLeft).toBe(13);
     });
+
+    it("a Risk card loses the temporary chips but not the player's coins", () => {
+        typeCorrectAnswers();
+        viewMock.handlers?.onSubmit();
+        flip("reward");
+        viewMock.handlers?.onContinue();
+        typeCorrectAnswers();
+        viewMock.handlers?.onSubmit();
+        flip("risk");
+
+        expect(lastState().phase).toBe("lost");
+        expect(lastState().chips).toBe(0);
+        expect(resources.getCoins()).toBe(10);
+        expect(lastState().message).toContain("Risk");
+    });
 });
