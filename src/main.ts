@@ -68,7 +68,7 @@ class App implements ScreenSwitcher {
         this.fitStageToViewport();
         this.switchToScreen({
             type: "loading",
-            loader: loadStartupScreen(resources),
+            loader: () => loadStartupScreen(resources),
         });
     }
 
