@@ -51,6 +51,8 @@ export class RiskRewardScreenController extends ScreenController {
     startGame(): void {
         this.model.start();
         this.view.clearInputs();
+        // a new game starts with Quick Rules closed, so the inputs aren't hidden
+        this.view.setRulesOpen(false);
         this.setMessage("Work out the three values, then press Submit.", "info");
         this.refresh();
         this.show();

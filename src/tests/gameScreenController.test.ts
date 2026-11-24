@@ -404,25 +404,24 @@ describe("GameScreenController", () => {
                 expect.anything(), expect.anything(), "You already bought that hint.", false
             );
         });
-
-        it("allows buying a new range on the next question while keeping cards unlocked", async () => {
+        it("resets both hints on the next question so they can be bought again", async () => {
             const coinsBefore = resources.getCoins();
             await viewMock.onChooseHint!("cards");
             await viewMock.onChooseHint!("range");
+
             viewMock.onAnswer!(correctAnswer());
             viewMock.onNext!();
-            expect(currentState().canViewRemainingCards).toBe(true);
+
+            expect(currentState().canViewRemainingCards).toBe(false);
             expect(currentState().probabilityRange).toBeNull();
             expect(resources.getCoins()).toBe(coinsBefore - 2 * COST_OF_CLUE);
 
             viewMock.onBuyInfo!();
-            await viewMock.onChooseHint!("range");
+            await viewMock.onChooseHint!("cards");
 
             expect(currentState().canViewRemainingCards).toBe(true);
-            expect(currentState().probabilityRange).not.toBeNull();
             expect(resources.getCoins()).toBe(coinsBefore - 3 * COST_OF_CLUE);
         });
-
         it("keeps spent coins spent when a game restarts, but resets hint access", async () => {
             await viewMock.onChooseHint!("cards");
             await viewMock.onChooseHint!("range");

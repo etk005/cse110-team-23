@@ -207,7 +207,9 @@ export class GameScreenModel {
         this.waitingForNext = false;
         this.revealNextClue(this.state);
         this.askNextQuestion(this.state);
+        // Hints only apply to the question they were bought for
         this.state.probabilityRange = null;
+        this.state.canViewRemainingCards = false;
         this.state.choosingHint = false;
     }
 
