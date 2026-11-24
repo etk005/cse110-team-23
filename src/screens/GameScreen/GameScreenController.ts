@@ -87,7 +87,7 @@ export class GameScreenController extends ScreenController {
         this.updateView(this.getBuyInfoMessage(result));
     }
 
-    async handleChooseHint(kind: HintKind): Promise<void> {
+    private async handleChooseHint(kind: HintKind): Promise<void> {
         const state = this.model.getState();
         if (state.status != "playing" || this.model.isWaitingForNext()) {
             return;
