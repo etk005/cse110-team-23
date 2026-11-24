@@ -10,6 +10,7 @@ import { LoadingScreenController } from "./screens/LoadingScreen/LoadingScreenCo
 import { PlayerResources } from "./game/playerResources.ts";
 import { RiskRewardScreenController } from "./screens/RiskRewardScreen/RiskRewardScreenController.ts";
 import { AuthScreenController } from "./screens/AuthScreen/AuthScreenController.ts";
+import { DieMiniGameScreenController } from "./screens/DieMiniScreen/DieMiniScreenController.ts";
 import { supabase } from "./lib/supabase.ts";
 
 // Main application class that manages the screens and navigation
@@ -24,6 +25,7 @@ class App implements ScreenSwitcher {
     private loadingController: LoadingScreenController;
     private riskRewardController: RiskRewardScreenController;
     private authController: AuthScreenController;
+    private dieMiniGameController: DieMiniGameScreenController;
 
     constructor(container: string) {
         // Draw at the screen's real pixel density so it's sharp on retina displays
@@ -51,6 +53,7 @@ class App implements ScreenSwitcher {
         this.loadingController = new LoadingScreenController(this);
         this.riskRewardController = new RiskRewardScreenController(this, resources);
         this.authController = new AuthScreenController(this);
+        this.dieMiniGameController = new DieMiniGameScreenController(this);
 
         // Add all screen views to the same layer
         this.layer.add(this.menuController.getView().getGroup());
@@ -60,6 +63,7 @@ class App implements ScreenSwitcher {
         this.layer.add(this.loadingController.getView().getGroup());
         this.layer.add(this.riskRewardController.getView().getGroup());
         this.layer.add(this.authController.getView().getGroup());
+        this.layer.add(this.dieMiniGameController.getView().getGroup());
 
         window.addEventListener("resize", () => this.fitStageToViewport());
 
@@ -107,6 +111,7 @@ class App implements ScreenSwitcher {
         this.loadingController.hide();
         this.riskRewardController.hide();
         this.authController.hide();
+        this.dieMiniGameController.hide();
 
         switch (screen.type) {
             case "menu":
@@ -143,6 +148,10 @@ class App implements ScreenSwitcher {
 
             case "auth":
                 this.authController.show();
+                break;
+
+            case "dieMiniGame":
+                this.dieMiniGameController.startGame();
                 break;
         }
     }

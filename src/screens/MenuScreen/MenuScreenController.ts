@@ -21,7 +21,8 @@ export class MenuScreenController extends ScreenController {
             () => {
                 supabase.auth.signOut();
                 this.screenSwitcher.switchToScreen({ type: "auth" });
-            }
+            },
+            () => this.screenSwitcher.switchToScreen({ type: "dieMiniGame" })
         );
     }
 
