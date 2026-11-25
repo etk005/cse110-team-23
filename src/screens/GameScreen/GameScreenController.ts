@@ -3,6 +3,10 @@ import { ScreenController } from "../../types.ts";
 import type { ScreenSwitcher } from "../../types.ts";
 import { GameScreenModel } from "./GameScreenModel.ts";
 import { GameScreenView } from "./GameScreenView.ts";
+import { levelPoints } from "../../game/playerResources.ts";
+import type { PlayerResources } from "../../game/playerResources.ts";
+import { COST_OF_CLUE } from "../../constants.ts";
+import { saveCoins } from "../../lib/playerCoins.ts";
 
 /** 
  * Coordinates the game screen: connects model state to view rendering and input callbacks. 
@@ -11,11 +15,13 @@ export class GameScreenController extends ScreenController {
     private model: GameScreenModel;
     private view: GameScreenView;
     private screenSwitcher: ScreenSwitcher;
+    private resources: PlayerResources;
 
-    constructor(screenSwitcher: ScreenSwitcher) {
+    constructor(screenSwitcher: ScreenSwitcher, resources: PlayerResources) {
         super();
 
         this.screenSwitcher = screenSwitcher;
+        this.resources = resources;
         this.model = new GameScreenModel();
 
         this.view = new GameScreenView(
@@ -26,6 +32,10 @@ export class GameScreenController extends ScreenController {
             (kind) => this.handleChooseHint(kind),
             (guess) => this.handleGuess(guess)
         );
+
+        // keep the coins/score readout current when rewards or purchases change them
+        this.resources.onChange(() => this.updateResources());
+        this.updateResources();
     }
 
     /** 
@@ -78,15 +88,51 @@ export class GameScreenController extends ScreenController {
         this.updateView(this.getBuyInfoMessage(result));
     }
 
-    private handleChooseHint(kind: HintKind): void {
+    private async handleChooseHint(kind: HintKind): Promise<void> {
+        const state = this.model.getState();
+        if (state.status != "playing" || this.model.isWaitingForNext()) {
+            return;
+        }
+        let alreadyBought : boolean;
+        if (kind === "cards") {
+            alreadyBought = state.canViewRemainingCards;
+        }
+        else{
+            alreadyBought = state.probabilityRange !== null;
+        }
+        // Check for an existing hint before charging coins.
+        if (alreadyBought) {
+            this.updateView("You already bought that hint.");
+            return;
+        }
+        if (this.resources.getCoins() < COST_OF_CLUE) {
+            this.updateView("Not enough coins!");
+            return;
+        }
+        const previousBalance = this.resources.getCoins();
+        let savedBalance: number;
+        try{
+        savedBalance = await saveCoins(previousBalance, previousBalance - COST_OF_CLUE);
+        
+        }
+        catch (error) {
+            console.error("Failed to save hint purchase", error);
+            this.updateView("Could not buy hint. Please try again.");
+            return;
+        }
+        this.resources.setCoins(savedBalance);
         const result = this.model.buyHint(kind);
+        if (result !== "bought") {
+            return;
+        }
         this.updateView(this.getBuyInfoMessage(result));
-
-        if (result === "bought" && kind === "cards") {
+        
+        if (kind === "cards") {
             this.view.showRemainingCards(
                 this.model.getState().remainingPossibleCards
             );
         }
+        this.view.showCoinsSpent(COST_OF_CLUE);
     }
 
     private getBuyInfoMessage(result: string): string {
@@ -95,8 +141,6 @@ export class GameScreenController extends ScreenController {
                 return "Choose a hint.";
             case "bought":
                 return "Clue bought!";
-            case "not enough chips":
-                return "Not enough chips!";
             case "already_bought":
                 return "You already bought that hint.";
             default:
@@ -105,11 +149,28 @@ export class GameScreenController extends ScreenController {
     }
     
 
+    /** Records the level's points, then opens the results screen. */
     private showResults(): void {
+        const state = this.model.getState();
+        const won = state.status === "won";
+        const points = levelPoints(won, state.strikes);
+
+        this.resources.recordLevelResult(state.levelId, points);
+
         this.screenSwitcher.switchToScreen({
             type: "result",
-            score: this.model.getState().questionsAnswered,
+            won,
+            points,
         });
+    }
+
+    private updateResources(): void {
+        this.view.updateResources(
+            this.resources.getCoins(),
+            this.resources.getScore(),
+            // what clearing the level would be worth right now
+            levelPoints(true, this.model.getState().strikes)
+        );
     }
 
     private updateView(
@@ -122,6 +183,9 @@ export class GameScreenController extends ScreenController {
             feedback,
             showNext
         );
+
+        // strikes change the level's points, so refresh the readout too
+        this.updateResources();
     }
 
     getView(): GameScreenView {

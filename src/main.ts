@@ -7,7 +7,12 @@ import { ResultsScreenController } from "./screens/ResultsScreen/ResultsScreenCo
 import { STAGE_WIDTH, STAGE_HEIGHT } from "./constants.ts";
 import { LevelsScreenController } from "./screens/LevelsScreen/LevelsScreenController.ts";
 import { LoadingScreenController } from "./screens/LoadingScreen/LoadingScreenController.ts";
+import { PlayerResources } from "./game/playerResources.ts";
 import { RiskRewardScreenController } from "./screens/RiskRewardScreen/RiskRewardScreenController.ts";
+import { AuthScreenController } from "./screens/AuthScreen/AuthScreenController.ts";
+import { DieMiniGameScreenController } from "./screens/DieMiniScreen/DieMiniScreenController.ts";
+import { supabase } from "./lib/supabase.ts";
+import {loadCoins} from "./lib/playerCoins.ts";
 
 // Main application class that manages the screens and navigation
 class App implements ScreenSwitcher {
@@ -20,6 +25,8 @@ class App implements ScreenSwitcher {
     private levelsController: LevelsScreenController;
     private loadingController: LoadingScreenController;
     private riskRewardController: RiskRewardScreenController;
+    private authController: AuthScreenController;
+    private dieMiniGameController: DieMiniGameScreenController;
 
     constructor(container: string) {
         // Draw at the screen's real pixel density so it's sharp on retina displays
@@ -36,13 +43,19 @@ class App implements ScreenSwitcher {
         this.layer = new Konva.Layer();
         this.stage.add(this.layer);
 
+        // One set of coins and score, shared by every screen that shows them
+        const resources = new PlayerResources();
+        const loadPlayer = () => loadStartupScreen(resources);
+
         // Initialize the screen controllers
-        this.menuController = new MenuScreenController(this);
-        this.gameController = new GameScreenController(this);
-        this.resultsController = new ResultsScreenController(this);
+        this.menuController = new MenuScreenController(this, resources);
+        this.gameController = new GameScreenController(this, resources);
+        this.resultsController = new ResultsScreenController(this, resources);
         this.levelsController = new LevelsScreenController(this);
         this.loadingController = new LoadingScreenController(this);
-        this.riskRewardController = new RiskRewardScreenController(this);
+        this.riskRewardController = new RiskRewardScreenController(this, resources);
+        this.authController = new AuthScreenController(this, loadPlayer);
+        this.dieMiniGameController = new DieMiniGameScreenController(this);
 
         // Add all screen views to the same layer
         this.layer.add(this.menuController.getView().getGroup());
@@ -51,12 +64,17 @@ class App implements ScreenSwitcher {
         this.layer.add(this.levelsController.getView().getGroup());
         this.layer.add(this.loadingController.getView().getGroup());
         this.layer.add(this.riskRewardController.getView().getGroup());
+        this.layer.add(this.authController.getView().getGroup());
+        this.layer.add(this.dieMiniGameController.getView().getGroup());
 
         window.addEventListener("resize", () => this.fitStageToViewport());
 
         this.layer.draw();
         this.fitStageToViewport();
-        this.menuController.show();
+        this.switchToScreen({
+            type: "loading",
+            loader: () => loadStartupScreen(resources),
+        });
     }
 
     // Scale the 1920x1080 stage to fit the browser window, keeping its shape
@@ -87,6 +105,8 @@ class App implements ScreenSwitcher {
         this.levelsController.hide();
         this.loadingController.hide();
         this.riskRewardController.hide();
+        this.authController.hide();
+        this.dieMiniGameController.hide();
 
         switch (screen.type) {
             case "menu":
@@ -101,7 +121,7 @@ class App implements ScreenSwitcher {
                 break;
 
             case "result":
-                this.resultsController.showResults(screen.score);
+                this.resultsController.showResults(screen.won, screen.points);
                 break;
 
             case "levels":
@@ -120,7 +140,32 @@ class App implements ScreenSwitcher {
             case "loading":
                 this.loadingController.wait(screen.loader);
                 break;
+
+            case "auth":
+                this.authController.show();
+                break;
+
+            case "dieMiniGame":
+                this.dieMiniGameController.startGame();
+                break;
         }
+    }
+}
+
+async function loadStartupScreen(resources: PlayerResources): Promise<Screen> {
+    const {data: {user}} = await supabase.auth.getUser();
+
+    if (!user) {
+        return { type: "auth" };
+    }
+
+    try{
+        const coins = await loadCoins(user.id);
+        resources.setCoins(coins);
+        return { type: "menu" };
+    } catch (error) {
+        console.error("Error loading coins:", error);
+        return { type: "auth" };
     }
 }
 

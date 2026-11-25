@@ -8,10 +8,12 @@ import type { Loader } from "./screens/LoadingScreen/LoadingScreenController";
 export type Screen =
     | { type: "menu" }
     | { type: "game", level?: Level }
-    | { type: "result"; score: number }
+    | { type: "result"; won: boolean; points: number }
     | { type: "levels" }
     | { type: "riskReward" } // Risk/Reward minigame; starts a fresh game each time
-    | { type: "loading"; loader: Loader };
+    | { type: "loading"; loader: Loader }
+    | { type: "auth" }
+    | { type: "dieMiniGame" };
 
 /** 
  * Implemented by the top-level App to handle screen transitions. 

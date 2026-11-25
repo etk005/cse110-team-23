@@ -9,7 +9,7 @@
         "build": "tsc --noEmit && vite build",
         "preview": "vite preview",
         "test": "vitest",
-        "validate-levels": "tsx ./scripts/validate-levels.js"
+        "validate-levels": "tsx ./scripts/validate-levels.ts"
     },
     "repository": {
         "type": "git",
@@ -24,11 +24,13 @@
     "homepage": "https://github.com/etk005/cse110-team-23#readme",
     "devDependencies": {
         "@types/node": "^26.6.5",
+        "supabase": "^3.1.0",
         "typescript": "^7.0.2",
         "vite": "^8.3.5",
         "vitest": "^5.0.5"
     },
     "dependencies": {
+        "@supabase/supabase-js": "^2.119.0",
         "konva": "^10.9.0",
         "tsx": "^4.23.15",
         "zod": "^4.6.7"

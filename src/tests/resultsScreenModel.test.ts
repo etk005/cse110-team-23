@@ -9,43 +9,37 @@ describe("ResultsScreenModel", () => {
         model = new ResultsScreenModel();
     });
 
-    it("starts with zero score", () => {
-        expect(model.getScore()).toBe(0);
+    it("starts with zero points and no win", () => {
+        expect(model.getPoints()).toBe(0);
+        expect(model.isWin()).toBe(false);
     });
 
-    it("stores the provided score", () => {
-        model.setScore(2);
+    it("stores the provided result", () => {
+        model.setResult(true, 8);
 
-        expect(model.getScore()).toBe(2);
-    });
-
-    it("recognizes a completed level", () => {
-        model.setScore(3);
-
+        expect(model.getPoints()).toBe(8);
         expect(model.isWin()).toBe(true);
     });
 
-    it("recognizes an incomplete level", () => {
-        model.setScore(1);
+    it("recognizes a failed level", () => {
+        model.setResult(false, 0);
 
         expect(model.isWin()).toBe(false);
     });
 
     it("updates results between games", () => {
-        model.setScore(3);
-        expect(model.isWin()).toBe(true);
+        model.setResult(true, 10);
+        model.setResult(false, 0);
 
-        model.setScore(0);
-
-        expect(model.getScore()).toBe(0);
+        expect(model.getPoints()).toBe(0);
         expect(model.isWin()).toBe(false);
     });
 
     it("keeps separate results instances independent", () => {
         const secondModel = new ResultsScreenModel();
 
-        model.setScore(3);
+        model.setResult(true, 10);
 
-        expect(secondModel.getScore()).toBe(0);
+        expect(secondModel.getPoints()).toBe(0);
     });
 });

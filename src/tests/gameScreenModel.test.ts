@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Level } from "../shared/types.ts";
 import { GameScreenModel } from "../screens/GameScreen/GameScreenModel.ts";
-import { COST_OF_CLUE, STARTING_CHIPS } from "../constants.ts";
 import { getRemainingPossibleCards } from "../cardFilter.ts";
 
 const level1: Level = {
@@ -85,9 +84,24 @@ describe("GameScreenModel", () => {
             );
         });
 
-        it("does not make 0 the correct answer for the first question", () => {
-            // One of the four possible hearts is an Ace.
-            expect(model.getCorrectAnswer()).toBe(1 / 4);
+        it("always keeps the hidden card among the remaining cards", () => {
+            for (let i = 0; i < level1.deck.length; i++) {
+                const seeded = new GameScreenModel(() => i / level1.deck.length);
+                seeded.setLevel(level1);
+
+                const remaining = seeded.getState().remainingPossibleCards;
+
+                expect(remaining.map((card) => card.id)).toContain(
+                    level1.deck[i]!.id
+                );
+            }
+        });
+
+        it("does not make 0 or 1 the correct answer for the first question", () => {
+            const probability = model.getCorrectAnswer();
+
+            expect(probability).toBeGreaterThan(0);
+            expect(probability).toBeLessThan(1);
         });
 
         it("does not start waiting for Next Question", () => {
@@ -151,6 +165,25 @@ describe("GameScreenModel", () => {
             const answer = correctAnswer();
 
             expect(model.submitAnswer(answer)).toBe(true);
+        });
+
+        it("accepts a decimal rounded to 2 places", () => {
+            const rounded = model.getCorrectAnswer().toFixed(2);
+
+            expect(model.submitAnswer(rounded)).toBe(true);
+        });
+
+        it("accepts an equivalent unsimplified fraction", () => {
+            const remaining = model.getState().remainingPossibleCards.length;
+            const matching = Math.round(model.getCorrectAnswer() * remaining);
+
+            expect(model.submitAnswer(`${matching}/${remaining}`)).toBe(true);
+        });
+
+        it("rejects an answer that is off by more than rounding", () => {
+            const close = String(model.getCorrectAnswer() + 0.02);
+
+            expect(model.submitAnswer(close)).toBe(false);
         });
 
         it("rejects malformed input", () => {
@@ -236,7 +269,6 @@ describe("GameScreenModel", () => {
                 expect(state.remainingPossibleCards).toEqual(
                     getRemainingPossibleCards(state.deck, state.knownInformation)
                 );
-                expect(seeded.getChips()).toBe(STARTING_CHIPS);
             }
         });
 
@@ -249,6 +281,35 @@ describe("GameScreenModel", () => {
 
             expect(model.getState().knownInformation).toEqual(before.knownInformation);
             expect(model.getState().remainingPossibleCards).toEqual(before.remainingPossibleCards);
+        });
+
+        it("never repeats a question within a level", () => {
+            const seen = new Set<string>();
+
+            while (model.getState().status === "playing") {
+                const question = model.getState().currentQuestion!;
+
+                expect(seen.has(question.id)).toBe(false);
+                seen.add(question.id);
+
+                model.submitAnswer(correctAnswer());
+                model.nextQuestion();
+            }
+        });
+
+        it("has a question for every required answer, even past three", () => {
+            model.setLevel({ ...level1, questionsRequired: 6 });
+
+            completeGame();
+
+            expect(model.getState().status).toBe("won");
+        });
+
+        it("words every question the same way and names it by its condition", () => {
+            const question = model.getState().currentQuestion!;
+
+            expect(question.text).toMatch(/^What is the probability that the hidden card is .+\?$/);
+            expect(question.id).toBe(`${question.property}-${question.operator}-${question.value}`);
         });
 
         it("prevents repeated Next Question clicks from skipping", () => {
@@ -360,43 +421,13 @@ describe("GameScreenModel", () => {
             });
         });
     });
-    describe("Adding Chips", () =>{
-        it("adds chips to the model", () => {
-            model.addChips(10);
-            expect(model.getChips()).toBe(STARTING_CHIPS + 10);
-            expect(model.getState().chips).toBe(STARTING_CHIPS + 10);
-        });
-        it("does not add negative chips", ()=>{
-            expect(() => model.addChips(-10)).toThrow("Cannot add negative chips");
-            expect(model.getChips()).toBe(STARTING_CHIPS);
-            expect(model.getState().chips).toBe(STARTING_CHIPS);
-        })
-    });
-    describe("Subtracting Chips", () =>{
-        it("subtracts chips from the model", () => {
-            model.subtractChips();
-            expect(model.getChips()).toBe(STARTING_CHIPS - COST_OF_CLUE);
-            expect(model.getState().chips).toBe(STARTING_CHIPS - COST_OF_CLUE);
-        });
-        it("does not subtract chips when the balance is below the clue cost", ()=>{
-            while (model.getChips() >= COST_OF_CLUE) {
-                model.subtractChips();
-            }
-            const remainingChips = model.getChips();
-
-            expect(() => model.subtractChips()).toThrow("Cannot subtract negative chips");
-            expect(model.getChips()).toBe(remainingChips);
-            expect(model.getState().chips).toBe(remainingChips);
-        })
-    });
 
     describe("Paid hints", () => {
-        it("opens a hint menu without spending chips or adding card facts", () => {
+        it("opens a hint menu without adding card facts", () => {
             const cluesBefore = model.getState().knownInformation.length;
 
             expect(model.openHintMenu()).toBe("opened");
             expect(model.getState().choosingHint).toBe(true);
-            expect(model.getChips()).toBe(STARTING_CHIPS);
             expect(model.getState().knownInformation.length).toBe(cluesBefore);
         });
 
@@ -410,7 +441,6 @@ describe("GameScreenModel", () => {
             expect(state.canViewRemainingCards).toBe(true);
             expect(state.choosingHint).toBe(false);
             expect(state.knownInformation.length).toBe(cluesBefore);
-            expect(model.getChips()).toBe(STARTING_CHIPS - COST_OF_CLUE);
         });
 
         it("gives a probability range containing the true answer without adding facts", () => {
@@ -429,32 +459,27 @@ describe("GameScreenModel", () => {
 
         it("does not sell the same remaining-cards hint twice", () => {
             model.buyHint("cards");
-            const chips = model.getChips();
 
             expect(model.buyHint("cards")).toBe("already_bought");
-            expect(model.getChips()).toBe(chips);
         });
 
-        it("clears the range on the next question but keeps remaining cards unlocked", () => {
+        it("clears both hints on the next question", () => {
             model.buyHint("cards");
             model.buyHint("range");
             model.submitAnswer(correctAnswer());
             model.nextQuestion();
 
             const state = model.getState();
-            expect(state.canViewRemainingCards).toBe(true);
+            expect(state.canViewRemainingCards).toBe(false);
             expect(state.probabilityRange).toBeNull();
         });
 
-        it("refuses a hint when there are not enough chips", () => {
-            while (model.getChips() >= COST_OF_CLUE) {
-                model.subtractChips();
-            }
+        it("lets the remaining-cards hint be bought again on the next question", () => {
+            model.buyHint("cards");
+            model.submitAnswer(correctAnswer());
+            model.nextQuestion();
 
-            expect(model.openHintMenu()).toBe("not enough chips");
-            expect(model.buyHint("range")).toBe("not enough chips");
-            expect(model.getState().canViewRemainingCards).toBe(false);
-            expect(model.getState().probabilityRange).toBeNull();
+            expect(model.buyHint("cards")).toBe("bought");
         });
     });
 });
