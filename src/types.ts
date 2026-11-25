@@ -12,7 +12,8 @@ export type Screen =
     | { type: "levels" }
     | { type: "riskReward" } // Risk/Reward minigame; starts a fresh game each time
     | { type: "loading"; loader: Loader }
-    | { type: "auth" };
+    | { type: "auth" }
+    | { type: "dieMiniGame" };
 
 /** 
  * Implemented by the top-level App to handle screen transitions. 
