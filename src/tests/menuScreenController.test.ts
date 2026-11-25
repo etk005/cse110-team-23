@@ -1,6 +1,7 @@
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Screen, ScreenSwitcher } from "../types.ts";
+import { PlayerResources } from "../game/playerResources.ts";
 
 const viewMock = vi.hoisted(() => ({
     onStart: undefined as (() => void) | undefined,
@@ -16,6 +17,7 @@ vi.mock("../screens/MenuScreen/MenuScreenView.ts", () => ({
 
         show = viewMock.show;
         hide = viewMock.hide;
+        updateCoins = vi.fn();
     },
 }));
 
@@ -34,7 +36,7 @@ describe("MenuScreenController", () => {
             switchToScreen,
         };
 
-        controller = new MenuScreenController(screenSwitcher);
+        controller = new MenuScreenController(screenSwitcher, new PlayerResources());
     });
 
     it("switches to the levels screen when Start is clicked", () => {

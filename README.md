@@ -48,7 +48,9 @@ npx supabase start
 npm run dev
 ```
 
-Vite prints a local URL, typically `http://localhost:5173`. Open it in your browser. If you are not currently signed in, you will be directed to the **Auth Screen** to sign up or sign in. Once authenticated, you will be taken to the **Main Menu**.
+Vite prints a local URL, typically `http://localhost:5173`.
+If you are not currently signed in, opening that URL takes you to the **Auth Screen** to sign up or sign in.
+Once authenticated, you reach the **Main Menu**.
 
 ### Key Commands
 

@@ -55,6 +55,10 @@ export class AuthScreenView implements View {
         return this.group;
     }
 
+    showSignUpConfirmation(): void {
+        this.signUp.showConfirmation();
+    }
+
     // TODO: figure out a better way to propagate errors
     setError(error: string): void {
         this.signIn.setError(error);

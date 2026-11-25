@@ -4,6 +4,13 @@ import type { GameState, HintKind, Level } from "../shared/types.ts";
 import { GameScreenModel } from "../screens/GameScreen/GameScreenModel.ts";
 import { PlayerResources } from "../game/playerResources.ts";
 import { COST_OF_CLUE } from "../constants.ts";
+import { saveCoins } from "../lib/playerCoins.ts";
+
+vi.mock("../lib/playerCoins.ts", () => ({
+    saveCoins: vi.fn(),
+}));
+
+const saveCoinsMock = vi.mocked(saveCoins);
 
 const level1: Level = {
     id: 1,
@@ -27,9 +34,10 @@ const viewMock = vi.hoisted(() => ({
     onMenu: undefined as (() => void) | undefined,
     onNext: undefined as (() => void) | undefined,
     onBuyInfo: undefined as (() => void) | undefined,
-    onChooseHint: undefined as ((kind: HintKind) => void) | undefined,
+    onChooseHint: undefined as ((kind: HintKind) => Promise<void>) | undefined,
     render: vi.fn(),
     updateResources: vi.fn(),
+    showCoinsSpent: vi.fn(),
     showRemainingCards: vi.fn(),
     show: vi.fn(),
     hide: vi.fn(),
@@ -42,7 +50,7 @@ vi.mock("../screens/GameScreen/GameScreenView.ts", () => ({
             onMenu: () => void,
             onNext: () => void,
             onBuyInfo: () => void,
-            onChooseHint: (kind: HintKind) => void
+            onChooseHint: (kind: HintKind) => Promise<void>
         ) {
             viewMock.onAnswer = onAnswer;
             viewMock.onMenu = onMenu;
@@ -53,6 +61,7 @@ vi.mock("../screens/GameScreen/GameScreenView.ts", () => ({
 
         render = viewMock.render;
         updateResources = viewMock.updateResources;
+        showCoinsSpent = viewMock.showCoinsSpent;
         showRemainingCards = viewMock.showRemainingCards;
         show = viewMock.show;
         hide = viewMock.hide;
@@ -91,6 +100,8 @@ describe("GameScreenController", () => {
     beforeEach(() => {
         vi.clearAllMocks();
         vi.spyOn(Math, "random").mockReturnValue(0);
+        saveCoinsMock.mockReset();
+        saveCoinsMock.mockImplementation(async (_previousBalance, nextBalance) => nextBalance);
 
         switchToScreen = vi.fn<(screen: Screen) => void>();
 
@@ -251,7 +262,9 @@ describe("GameScreenController", () => {
                 canViewRemainingCards: false,
                 probabilityRange: null,
             });
+            expect(saveCoinsMock).not.toHaveBeenCalled();
             expect(viewMock.showRemainingCards).not.toHaveBeenCalled();
+            expect(viewMock.showCoinsSpent).not.toHaveBeenCalled();
             expect(viewMock.render).toHaveBeenLastCalledWith(
                 expect.anything(), expect.anything(), "Choose a hint.", false
             );
@@ -267,17 +280,21 @@ describe("GameScreenController", () => {
         });
 
         describe.each(["cards", "range"] as const)("%s purchases", (kind) => {
-            it("spends shared coins, unlocks the selected hint, and updates the readout", () => {
+            it("spends shared coins, unlocks the selected hint, and updates the readout", async () => {
                 const coinsBefore = resources.getCoins();
                 viewMock.onBuyInfo!();
 
-                viewMock.onChooseHint!(kind);
+                await viewMock.onChooseHint!(kind);
 
+                expect(saveCoinsMock).toHaveBeenCalledExactlyOnceWith(
+                    coinsBefore, coinsBefore - COST_OF_CLUE
+                );
                 expect(resources.getCoins()).toBe(coinsBefore - COST_OF_CLUE);
                 expect(currentState().choosingHint).toBe(false);
                 expect(viewMock.updateResources).toHaveBeenLastCalledWith(
                     coinsBefore - COST_OF_CLUE, 0, 10
                 );
+                expect(viewMock.showCoinsSpent).toHaveBeenCalledExactlyOnceWith(COST_OF_CLUE);
                 expect(viewMock.render).toHaveBeenLastCalledWith(
                     expect.anything(), expect.anything(), "Clue bought!", false
                 );
@@ -295,11 +312,11 @@ describe("GameScreenController", () => {
                 }
             });
 
-            it("allows a purchase when the balance exactly equals the cost", () => {
+            it("allows a purchase when the balance exactly equals the cost", async () => {
                 resources.spendCoins(resources.getCoins() - COST_OF_CLUE);
                 viewMock.onBuyInfo!();
 
-                viewMock.onChooseHint!(kind);
+                await viewMock.onChooseHint!(kind);
 
                 expect(resources.getCoins()).toBe(0);
                 expect(currentState().choosingHint).toBe(false);
@@ -312,34 +329,38 @@ describe("GameScreenController", () => {
 
             it.each([0, COST_OF_CLUE - 1])(
                 "rejects a purchase with %i coins without changing hint state",
-                (balance) => {
+                async (balance) => {
                     resources.spendCoins(resources.getCoins() - balance);
                     viewMock.onBuyInfo!();
                     const stateBefore = structuredClone(currentState());
 
-                    viewMock.onChooseHint!(kind);
+                    await viewMock.onChooseHint!(kind);
 
+                    expect(saveCoinsMock).not.toHaveBeenCalled();
                     expect(resources.getCoins()).toBe(balance);
                     expect(currentState()).toEqual(stateBefore);
                     expect(viewMock.showRemainingCards).not.toHaveBeenCalled();
+                    expect(viewMock.showCoinsSpent).not.toHaveBeenCalled();
                     expect(viewMock.render).toHaveBeenLastCalledWith(
                         expect.anything(), expect.anything(), "Not enough coins!", false
                     );
                 }
             );
 
-            it("does not charge or open a popup again for a duplicate purchase", () => {
+            it("does not charge or open a popup again for a duplicate purchase", async () => {
                 viewMock.onBuyInfo!();
-                viewMock.onChooseHint!(kind);
+                await viewMock.onChooseHint!(kind);
                 const coinsAfterPurchase = resources.getCoins();
                 const stateAfterPurchase = structuredClone(currentState());
                 viewMock.showRemainingCards.mockClear();
 
-                viewMock.onChooseHint!(kind);
+                await viewMock.onChooseHint!(kind);
 
+                expect(saveCoinsMock).toHaveBeenCalledTimes(1);
                 expect(resources.getCoins()).toBe(coinsAfterPurchase);
                 expect(currentState()).toEqual(stateAfterPurchase);
                 expect(viewMock.showRemainingCards).not.toHaveBeenCalled();
+                expect(viewMock.showCoinsSpent).toHaveBeenCalledExactlyOnceWith(COST_OF_CLUE);
                 expect(viewMock.render).toHaveBeenLastCalledWith(
                     expect.anything(), expect.anything(), "You already bought that hint.", false
                 );
@@ -347,12 +368,31 @@ describe("GameScreenController", () => {
 
         });
 
-        it("charges once per hint and refuses to reopen the picker when both are unlocked", () => {
+        it("keeps the balance and hint state when saving fails", async () => {
+            const error = new Error("Save failed");
+            saveCoinsMock.mockRejectedValueOnce(error);
+            vi.spyOn(console, "error").mockImplementation(() => {});
             const coinsBefore = resources.getCoins();
             viewMock.onBuyInfo!();
-            viewMock.onChooseHint!("cards");
+            const stateBefore = structuredClone(currentState());
+
+            await viewMock.onChooseHint!("cards");
+
+            expect(resources.getCoins()).toBe(coinsBefore);
+            expect(currentState()).toEqual(stateBefore);
+            expect(viewMock.showRemainingCards).not.toHaveBeenCalled();
+            expect(viewMock.showCoinsSpent).not.toHaveBeenCalled();
+            expect(viewMock.render).toHaveBeenLastCalledWith(
+                expect.anything(), expect.anything(), "Could not buy hint. Please try again.", false
+            );
+        });
+
+        it("charges once per hint and refuses to reopen the picker when both are unlocked", async () => {
+            const coinsBefore = resources.getCoins();
             viewMock.onBuyInfo!();
-            viewMock.onChooseHint!("range");
+            await viewMock.onChooseHint!("cards");
+            viewMock.onBuyInfo!();
+            await viewMock.onChooseHint!("range");
 
             viewMock.onBuyInfo!();
 
@@ -364,27 +404,27 @@ describe("GameScreenController", () => {
                 expect.anything(), expect.anything(), "You already bought that hint.", false
             );
         });
-
-        it("resets both hints on the next question so they can be bought again", () => {
+        it("resets both hints on the next question so they can be bought again", async () => {
             const coinsBefore = resources.getCoins();
-            viewMock.onChooseHint!("cards");
-            viewMock.onChooseHint!("range");
+            await viewMock.onChooseHint!("cards");
+            await viewMock.onChooseHint!("range");
+
             viewMock.onAnswer!(correctAnswer());
             viewMock.onNext!();
+
             expect(currentState().canViewRemainingCards).toBe(false);
             expect(currentState().probabilityRange).toBeNull();
             expect(resources.getCoins()).toBe(coinsBefore - 2 * COST_OF_CLUE);
 
             viewMock.onBuyInfo!();
-            viewMock.onChooseHint!("cards");
+            await viewMock.onChooseHint!("cards");
 
             expect(currentState().canViewRemainingCards).toBe(true);
             expect(resources.getCoins()).toBe(coinsBefore - 3 * COST_OF_CLUE);
         });
-
-        it("keeps spent coins spent when a game restarts, but resets hint access", () => {
-            viewMock.onChooseHint!("cards");
-            viewMock.onChooseHint!("range");
+        it("keeps spent coins spent when a game restarts, but resets hint access", async () => {
+            await viewMock.onChooseHint!("cards");
+            await viewMock.onChooseHint!("range");
             const coinsAfterPurchases = resources.getCoins();
 
             controller.startGame();

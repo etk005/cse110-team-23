@@ -1,5 +1,6 @@
 import Konva from "konva";
 import { CARD_HEIGHT, CARD_WIDTH } from "../constants";
+import { COLORS } from "../../../constants";
 import { EditableText } from "../../../components/EditableText";
 
 export type SignUpConfig = Konva.GroupConfig & {
@@ -8,7 +9,7 @@ export type SignUpConfig = Konva.GroupConfig & {
 };
 
 export class SignUp extends Konva.Group {
-    private errorText: Konva.Text;
+    private feedbackText: Konva.Text;
 
     constructor({ onSignUp, onSwitchToSignIn, ...options }: SignUpConfig = {}) {
         super({
@@ -88,16 +89,22 @@ export class SignUp extends Konva.Group {
         });
         switchGroup.add(switchText);
         
-        this.errorText = new Konva.Text({
+        this.feedbackText = new Konva.Text({
             fontSize: 20,
             fill: "red",
             offsetX: -10,
             offsetY: -160
         });
-        this.add(this.errorText);
+        this.add(this.feedbackText);
     }
 
-    setError(error: string) {
-        this.errorText.text(error);
+    setError(error: string): void {
+        this.feedbackText.fill("red");
+        this.feedbackText.text(error);
+    }
+
+    showConfirmation(): void {
+        this.feedbackText.fill(COLORS.background);
+        this.feedbackText.text("Check your email to confirm your account, then sign in.");
     }
 }
