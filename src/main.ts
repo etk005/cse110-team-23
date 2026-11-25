@@ -54,7 +54,7 @@ class App implements ScreenSwitcher {
         this.levelsController = new LevelsScreenController(this);
         this.loadingController = new LoadingScreenController(this);
         this.riskRewardController = new RiskRewardScreenController(this, resources);
-        this.authController = new AuthScreenController(this);
+        this.authController = new AuthScreenController(this, loadPlayer);
         this.dieMiniGameController = new DieMiniGameScreenController(this);
 
         // Add all screen views to the same layer
