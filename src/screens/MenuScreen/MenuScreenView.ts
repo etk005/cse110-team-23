@@ -4,6 +4,7 @@ import { STAGE_WIDTH, COLORS, MENU_SCREEN_CONSTANTS } from "../../constants.ts";
 
 export class MenuScreenView implements View {
     private group: Konva.Group;
+    private coinsText: Konva.Text;
 
     /**
      * @param onStartClick      Called when START GAME is clicked
@@ -12,6 +13,18 @@ export class MenuScreenView implements View {
     constructor(onStartClick: () => void, onRiskRewardClick: () => void, onSignOutClick: () => void, onDieMiniGameClick?: () => void) {
         this.group = new Konva.Group({ visible: false });
         const c = MENU_SCREEN_CONSTANTS;
+
+        this.coinsText = new Konva.Text({
+            x: STAGE_WIDTH - 280,
+            y: 40,
+            width: 240,
+            text: "",
+            fontSize: 32,
+            fontFamily: "Arial",
+            fill: COLORS.text,
+            align: "center",
+        });
+        this.group.add(this.coinsText)
 
         const title = new Konva.Text({
             x: STAGE_WIDTH / 2,
@@ -158,6 +171,11 @@ export class MenuScreenView implements View {
         signOutGroup.on("click tap", onSignOutClick);
         this.group.add(signOutGroup);
     }
+    updateCoins(coins: number): void{
+        this.coinsText.text(`${coins} coins`);
+        this.coinsText.getLayer()?.draw();
+    }
+
 
     show(): void {
         this.group.visible(true);

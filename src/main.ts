@@ -12,6 +12,7 @@ import { RiskRewardScreenController } from "./screens/RiskRewardScreen/RiskRewar
 import { AuthScreenController } from "./screens/AuthScreen/AuthScreenController.ts";
 import { DieMiniGameScreenController } from "./screens/DieMiniScreen/DieMiniScreenController.ts";
 import { supabase } from "./lib/supabase.ts";
+import {loadCoins} from "./lib/playerCoins.ts";
 
 // Main application class that manages the screens and navigation
 class App implements ScreenSwitcher {
@@ -44,9 +45,10 @@ class App implements ScreenSwitcher {
 
         // One set of coins and score, shared by every screen that shows them
         const resources = new PlayerResources();
+        const loadPlayer = () => loadStartupScreen(resources);
 
         // Initialize the screen controllers
-        this.menuController = new MenuScreenController(this);
+        this.menuController = new MenuScreenController(this, resources);
         this.gameController = new GameScreenController(this, resources);
         this.resultsController = new ResultsScreenController(this, resources);
         this.levelsController = new LevelsScreenController(this);
@@ -71,15 +73,8 @@ class App implements ScreenSwitcher {
         this.fitStageToViewport();
         this.switchToScreen({
             type: "loading",
-            loader: async () => {
-                const result = await supabase.auth.getUser();
-                if (result.data.user === null) {
-                    return { type: "auth" };
-                } else {
-                    return { type: "menu" };
-                }
-            }
-        })
+            loader: () => loadStartupScreen(resources),
+        });
     }
 
     // Scale the 1920x1080 stage to fit the browser window, keeping its shape
@@ -154,6 +149,23 @@ class App implements ScreenSwitcher {
                 this.dieMiniGameController.startGame();
                 break;
         }
+    }
+}
+
+async function loadStartupScreen(resources: PlayerResources): Promise<Screen> {
+    const {data: {user}} = await supabase.auth.getUser();
+
+    if (!user) {
+        return { type: "auth" };
+    }
+
+    try{
+        const coins = await loadCoins(user.id);
+        resources.setCoins(coins);
+        return { type: "menu" };
+    } catch (error) {
+        console.error("Error loading coins:", error);
+        return { type: "auth" };
     }
 }
 

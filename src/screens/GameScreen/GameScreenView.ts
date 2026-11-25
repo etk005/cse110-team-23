@@ -10,6 +10,7 @@ import {
     GAME_SCREEN_CONSTANTS,
 } from "../../constants.ts";
 
+const COIN_SPEND_DISPLAY_MS = 1000;
 const SUIT_ORDER: Suit[] = ["spades", "hearts", "diamonds", "clubs"];
 const RANK_ORDER: Rank[] = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
 const SUIT_SYMBOLS: Record<Suit, string> = {
@@ -33,6 +34,7 @@ export class GameScreenView implements View {
     private levelPoints = 0;
     private coinsText: Konva.Text | null = null;
     private scoreText: Konva.Text | null = null;
+    private coinsSpent: { label: Konva.Text; timeout: ReturnType<typeof setTimeout> } | null = null;
 
     // HTML text input drawn on top of the canvas (created on first use)
     private overlay: HTMLDivElement | null = null;
@@ -69,6 +71,7 @@ export class GameScreenView implements View {
         feedback = "",
         showNext = false
     ): void {
+        this.clearCoinsSpent();
         this.group.destroyChildren();
         this.modalOpen = false;
 
@@ -347,6 +350,36 @@ export class GameScreenView implements View {
         this.levelPoints = levelPoints;
         this.setResourceText();
         this.group.getLayer()?.batchDraw();
+    }
+
+    showCoinsSpent(amount: number): void {
+        const balance = this.coinsText;
+        if (!balance) {
+            return;
+        }
+
+        this.clearCoinsSpent();
+        const label = this.addText(
+            `−${amount} coins`,
+            balance.x() + balance.width() + GAME_SCREEN_CONSTANTS.PANEL_PADDING,
+            balance.y(),
+            balance.fontSize(),
+            COLORS.accent
+        ).listening(false);
+        const timeout = setTimeout(() => {
+            this.clearCoinsSpent();
+            this.group.getLayer()?.batchDraw();
+        }, COIN_SPEND_DISPLAY_MS);
+        this.coinsSpent = { label, timeout };
+        this.group.getLayer()?.batchDraw();
+    }
+
+    private clearCoinsSpent(): void {
+        if (this.coinsSpent) {
+            clearTimeout(this.coinsSpent.timeout);
+            this.coinsSpent.label.destroy();
+            this.coinsSpent = null;
+        }
     }
 
     private setResourceText(): void {
@@ -804,6 +837,7 @@ export class GameScreenView implements View {
     }
 
     hide(): void {
+        this.clearCoinsSpent();
         this.group.visible(false);
         this.group.getLayer()?.draw();
         this.updateInput();

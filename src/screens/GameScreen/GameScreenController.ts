@@ -6,6 +6,7 @@ import { GameScreenView } from "./GameScreenView.ts";
 import { levelPoints } from "../../game/playerResources.ts";
 import type { PlayerResources } from "../../game/playerResources.ts";
 import { COST_OF_CLUE } from "../../constants.ts";
+import { saveCoins } from "../../lib/playerCoins.ts";
 
 /** 
  * Coordinates the game screen: connects model state to view rendering and input callbacks. 
@@ -86,7 +87,7 @@ export class GameScreenController extends ScreenController {
         this.updateView(this.getBuyInfoMessage(result));
     }
 
-    private handleChooseHint(kind: HintKind): void {
+    private async handleChooseHint(kind: HintKind): Promise<void> {
         const state = this.model.getState();
         if (state.status != "playing" || this.model.isWaitingForNext()) {
             return;
@@ -103,17 +104,34 @@ export class GameScreenController extends ScreenController {
             this.updateView("You already bought that hint.");
             return;
         }
-        if (!this.resources.spendCoins(COST_OF_CLUE)) {
+        if (this.resources.getCoins() < COST_OF_CLUE) {
             this.updateView("Not enough coins!");
             return;
         }
+        const previousBalance = this.resources.getCoins();
+        let savedBalance: number;
+        try{
+        savedBalance = await saveCoins(previousBalance, previousBalance - COST_OF_CLUE);
+        
+        }
+        catch (error) {
+            console.error("Failed to save hint purchase", error);
+            this.updateView("Could not buy hint. Please try again.");
+            return;
+        }
+        this.resources.setCoins(savedBalance);
         const result = this.model.buyHint(kind);
+        if (result !== "bought") {
+            return;
+        }
         this.updateView(this.getBuyInfoMessage(result));
-        if (result === "bought" && kind === "cards") {
+        
+        if (kind === "cards") {
             this.view.showRemainingCards(
                 this.model.getState().remainingPossibleCards
             );
         }
+        this.view.showCoinsSpent(COST_OF_CLUE);
     }
 
     private getBuyInfoMessage(result: string): string {

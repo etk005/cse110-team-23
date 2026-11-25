@@ -9,7 +9,7 @@
         "build": "tsc --noEmit && vite build",
         "preview": "vite preview",
         "test": "vitest",
-        "validate-levels": "tsx ./scripts/validate-levels.js"
+        "validate-levels": "tsx ./scripts/validate-levels.ts"
     },
     "repository": {
         "type": "git",
