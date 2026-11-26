@@ -70,6 +70,9 @@ export interface GameState {
 
   // cards that have been guessed incorrectly
   incorrectlyGuessedCards: Card[];
+
+  // whether player has already submitted a final guess for the current question
+  hasGuessedThisQuestion?: boolean;
 }
 
 export type HintKind = "cards" | "range";

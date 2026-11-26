@@ -7,6 +7,7 @@ import { levelPoints } from "../../game/playerResources.ts";
 import type { PlayerResources } from "../../game/playerResources.ts";
 import { COST_OF_CLUE } from "../../constants.ts";
 import { saveCoins } from "../../lib/playerCoins.ts";
+import { CHIPS_PER_GUESS } from "../../game/rewardEngine.ts";
 
 /** 
  * Coordinates the game screen: connects model state to view rendering and input callbacks. 
@@ -69,14 +70,14 @@ export class GameScreenController extends ScreenController {
     }
 
     private handleNext(): void {
-        if (!this.model.isWaitingForNext()) {
-            return;
-        }
-
         const state = this.model.getState();
 
         if (state.status === "won") {
             this.showResults();
+            return;
+        }
+
+        if (!this.model.isWaitingForNext()) {
             return;
         }
 
@@ -193,6 +194,28 @@ export class GameScreenController extends ScreenController {
     }
 
     private handleGuess(card: Card) {
-        this.model.guessCard(card);
+        if (this.model.isWaitingForNext()) {
+            return;
+        }
+        const state = this.model.getState();
+        if (state.hasGuessedThisQuestion) {
+            this.updateView("Already guessed this question!");
+            return;
+        }
+        let coins = this.resources.getCoins();
+        if (coins < CHIPS_PER_GUESS) {
+            this.updateView("Not enough coins!");
+            return;
+        }
+        coins -= CHIPS_PER_GUESS;
+        this.resources.setCoins(coins);
+        this.view.showCoinsSpent(CHIPS_PER_GUESS);
+        if (this.model.guessCard(card)) {
+            coins += this.model.getReward();
+            this.resources.setCoins(coins);
+            this.updateView("You guessed it!", true);
+        } else {
+            this.updateView("Keep trying!");
+        }
     }
 }

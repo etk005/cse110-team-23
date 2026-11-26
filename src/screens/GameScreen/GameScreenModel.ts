@@ -71,7 +71,8 @@ export class GameScreenModel {
             choosingHint: false,
             canViewRemainingCards: false,
             probabilityRange: null,
-            incorrectlyGuessedCards: []
+            incorrectlyGuessedCards: [],
+            hasGuessedThisQuestion: false,
         };
 
         this.revealNextClue(state);
@@ -214,6 +215,7 @@ export class GameScreenModel {
         this.state.probabilityRange = null;
         this.state.canViewRemainingCards = false;
         this.state.choosingHint = false;
+        this.state.hasGuessedThisQuestion = false;
     }
 
     /**
@@ -275,19 +277,14 @@ export class GameScreenModel {
 
     guessCard(card: Card): boolean {
         if (this.state.status !== "playing") return false;
-        
-        if (this.chips < CHIPS_PER_GUESS) return false;
-        this.chips -= CHIPS_PER_GUESS;
-        this.state.chips = this.chips;
+        if (this.state.hasGuessedThisQuestion) return false;
+        this.state.hasGuessedThisQuestion = true;
 
         if (card.id === this.hiddenCard!.id) {
             this.state.status = "won";
             this.state.hiddenCard.isRevealed = true;
-            this.chips += this.getReward();
-            this.state.chips = this.chips;
             return true;
         }
-
         this.state.incorrectlyGuessedCards.push(card);
         return false;
     }
