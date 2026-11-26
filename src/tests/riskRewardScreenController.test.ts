@@ -1,17 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Screen, ScreenSwitcher } from "../types.ts";
-import { saveCoins } from "../lib/playerCoins.ts";
 import type {
     RiskRewardHandlers,
     RiskRewardViewState,
 } from "../screens/RiskRewardScreen/RiskRewardScreenView.ts";
 import type { CalcField } from "../screens/RiskRewardScreen/RiskRewardScreenModel.ts";
-
-vi.mock("../lib/playerCoins.ts", () => ({
-    saveCoins: vi.fn(),
-}));
-
-const saveCoinsMock = vi.mocked(saveCoins);
 
 const viewMock = vi.hoisted(() => ({
     handlers: undefined as RiskRewardHandlers | undefined,
@@ -68,8 +61,6 @@ describe("RiskRewardScreenController", () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
-        saveCoinsMock.mockReset();
-        saveCoinsMock.mockImplementation(async (_previousBalance, nextBalance) => nextBalance);
         viewMock.inputs = { risk: "", reward: "", expectedValue: "" };
         screens = [];
         const switcher: ScreenSwitcher = { switchToScreen: (screen) => screens.push(screen) };
@@ -131,7 +122,6 @@ describe("RiskRewardScreenController", () => {
         expect(lastState().message).toContain(`Reward +${won}`);
 
         await viewMock.handlers?.onCashOut();
-        expect(saveCoinsMock).toHaveBeenCalledExactlyOnceWith(10, 10 + won);
         expect(resources.getCoins()).toBe(10 + won);
         expect(lastState().phase).toBe("cashedOut");
         expect(lastState().coins).toBe(10 + won);
@@ -141,7 +131,7 @@ describe("RiskRewardScreenController", () => {
     });
 
     it("keeps the chips available for a retry when the save fails", async () => {
-        saveCoinsMock.mockRejectedValueOnce(new Error("Save failed"));
+        vi.spyOn(resources, "earnCoins").mockRejectedValueOnce(new Error("Save failed"));
         vi.spyOn(console, "error").mockImplementation(() => {});
         typeCorrectAnswers();
         viewMock.handlers?.onSubmit();
