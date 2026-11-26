@@ -47,6 +47,21 @@ export class GameScreenView implements View {
         height: number;
     } | null = null;
 
+    // Guess input in the finalGuess panel
+    private guessInput: HTMLInputElement | null = null;
+    private wantGuessInput = false;
+    private guessInputRect: {
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+    } | null = null;
+    private currentDeck: Card[] = [];
+    private lastAction: "guess" | "probability" | "hint" = "probability";
+    private guessFeedbackText: Konva.Text | null = null;
+    private guessError = false;
+    private canGuess = false;
+
     // True while the "View Possible Cards" popup is open
     private modalOpen = false;
 
@@ -56,6 +71,7 @@ export class GameScreenView implements View {
         onNext: () => void,
         onBuyInfo: () => void,
         onChooseHint: (kind: HintKind) => void,
+        private onGuess: (card: Card) => void = () => {},
     ) {
         this.group = new Konva.Group({ visible: false });
         this.onAnswer = onAnswer;
@@ -74,6 +90,7 @@ export class GameScreenView implements View {
         this.clearCoinsSpent();
         this.group.destroyChildren();
         this.modalOpen = false;
+        this.currentDeck = state.deck;
 
         const background = new Konva.Rect({
             width: STAGE_WIDTH,
@@ -236,52 +253,72 @@ export class GameScreenView implements View {
                 submitWidth,
                 () => this.submitInput()
             );
-            const buyX = state.canViewRemainingCards
-                ? layout.REMAINING_PANEL_X +
-                  layout.REMAINING_PANEL_WIDTH +
-                  pad * 2
-                : layout.REMAINING_PANEL_X;
+            const buyX = layout.REMAINING_PANEL_X;
 
-            const buttonY =
-                layout.REMAINING_PANEL_Y +
-                layout.REMAINING_PANEL_HEIGHT -
-                layout.BUTTON_HEIGHT;
+            const buttonY = state.canViewRemainingCards
+                ? layout.REMAINING_PANEL_Y +
+                  layout.REMAINING_PANEL_HEIGHT +
+                  pad
+                : layout.REMAINING_PANEL_Y +
+                  layout.REMAINING_PANEL_HEIGHT -
+                  layout.BUTTON_HEIGHT;
             const hintButtonWidth = layout.NEXT_BUTTON_WIDTH;
 
             if (state.choosingHint) {
-                let optionX = buyX;
+                const hintOptions: { label: string; kind: HintKind }[] = [];
                 if (!state.canViewRemainingCards) {
-                    this.addButton(
-                        "See remaining cards",
-                        optionX,
-                        buttonY,
-                        hintButtonWidth,
-                        () => this.onChooseHint("cards")
-                    );
-                    optionX += hintButtonWidth + pad;
+                    hintOptions.push({
+                        label: "See remaining cards",
+                        kind: "cards",
+                    });
                 }
                 if (state.probabilityRange === null) {
-                    this.addButton(
-                        "Probability range",
-                        optionX,
-                        buttonY,
-                        hintButtonWidth,
-                        () => this.onChooseHint("range")
-                    );
+                    hintOptions.push({
+                        label: "Probability range",
+                        kind: "range",
+                    });
                 }
+
+                hintOptions.forEach((option, index) => {
+                    const y =
+                        hintOptions.length > 1
+                            ? buttonY - (hintOptions.length - 1 - index) * (layout.BUTTON_HEIGHT + pad)
+                            : buttonY;
+
+                    this.addButton(
+                        option.label,
+                        buyX,
+                        y,
+                        hintButtonWidth,
+                        () => {
+                            this.lastAction = "hint";
+                            this.onChooseHint(option.kind);
+                        }
+                    );
+                });
             } else {
                 this.addButton(
                     "Buy Clue",
                     buyX,
                     buttonY,
                     layout.MENU_BUTTON_WIDTH,
-                    () => this.onBuyInfo()
+                    () => {
+                        this.lastAction = "hint";
+                        this.onBuyInfo();
+                    }
                 );
             }
         }
 
         // Feedback message: beside Submit, or where the input was
-        if (feedback) {
+        const isGuessFeedback =
+            this.lastAction === "guess"
+                ? feedback === "You guessed it!" ||
+                  feedback === "Keep trying!" ||
+                  feedback === "Not enough coins!" ||
+                  feedback === "Already guessed this question!"
+                : feedback === "You guessed it!" || feedback === "Keep trying!";
+        if (feedback && !isGuessFeedback) {
             this.group.add(
                 new Konva.Text({
                     x: canAnswer ? submitAbsX + submitWidth + pad * 1.5 : inputAbsX,
@@ -334,6 +371,70 @@ export class GameScreenView implements View {
                 this.onMenu
             );
         }
+
+        const finalGuessPanel = addPanel(
+            this.group,
+            layout.RIGHT_COLUMN_X,
+            layout.GUESS_PANEL_Y,
+            layout.RIGHT_COLUMN_WIDTH,
+            layout.GUESS_PANEL_HEIGHT,
+            "Make a guess"
+        );
+
+        const guessRowY = layout.PANEL_BODY_Y;
+        const guessRowAbsY = layout.GUESS_PANEL_Y + guessRowY;
+        const guessInputAbsX = layout.RIGHT_COLUMN_X + pad;
+        const guessSubmitAbsX = guessInputAbsX + inputWidth + pad;
+
+        const showGuessInput = state.status === "playing" || state.status === "won";
+        const canGuess =
+            !showNext &&
+            state.status === "playing" &&
+            !state.hasGuessedThisQuestion;
+
+        this.canGuess = canGuess;
+        this.wantGuessInput = showGuessInput;
+        this.guessInputRect = {
+            x: guessInputAbsX,
+            y: guessRowAbsY,
+            width: inputWidth,
+            height: rowHeight,
+        };
+
+        if (canGuess) {
+            this.addButton(
+                "Guess",
+                guessSubmitAbsX,
+                guessRowAbsY,
+                submitWidth,
+                () => this.submitGuess()
+            );
+        }
+
+        finalGuessPanel.add(
+            new Konva.Text({
+                x: pad,
+                y: guessRowY + rowHeight + layout.PANEL_HINT_GAP,
+                text: "Enter a rank and suit, like AH or 10S.",
+                fontSize: layout.PANEL_HINT_FONT_SIZE,
+                fontStyle: "bold",
+                fontFamily: "Arial",
+                fill: layout.PANEL_HINT_TEXT,
+            })
+        );
+
+        const guessFeedbackMsg = isGuessFeedback ? feedback : (this.guessError ? "Invalid format!" : "");
+        this.guessFeedbackText = new Konva.Text({
+            x: canGuess ? guessSubmitAbsX + submitWidth + pad * 1.5 : guessSubmitAbsX,
+            y: guessRowAbsY,
+            height: rowHeight,
+            verticalAlign: "middle",
+            text: guessFeedbackMsg,
+            fontSize: layout.FEEDBACK_FONT_SIZE,
+            fontFamily: "Arial",
+            fill: guessFeedbackMsg === "You guessed it!" ? "#1c7a3c" : COLORS.button,
+        });
+        this.group.add(this.guessFeedbackText);
 
         this.group.getLayer()?.draw();
 
@@ -394,70 +495,108 @@ export class GameScreenView implements View {
     // same stage coordinates as everything else.
 
     private ensureInput(): void {
-        if (this.overlay || !this.wantInput || typeof document === "undefined") {
+        if (typeof document === "undefined") {
             return;
         }
 
-        const overlay = document.createElement("div");
-        overlay.style.cssText = [
-            "position: fixed",
-            "left: 0",
-            "top: 0",
-            `width: ${STAGE_WIDTH}px`,
-            `height: ${STAGE_HEIGHT}px`,
-            "transform-origin: 0 0",
-            "pointer-events: none", // clicks fall through to the canvas...
-            "display: none",
-        ].join(";");
+        if (!this.overlay && (this.wantInput || this.wantGuessInput)) {
+            const overlay = document.createElement("div");
+            overlay.style.cssText = [
+                "position: fixed",
+                "left: 0",
+                "top: 0",
+                `width: ${STAGE_WIDTH}px`,
+                `height: ${STAGE_HEIGHT}px`,
+                "transform-origin: 0 0",
+                "pointer-events: none", // clicks fall through to the canvas...
+                "display: none",
+            ].join(";");
+            document.body.appendChild(overlay);
+            this.overlay = overlay;
 
-        const input = document.createElement("input");
-        input.type = "text";
-        input.placeholder = "Enter your probability";
-        input.autocomplete = "off";
-        input.style.cssText = [
-            "position: absolute",
-            "box-sizing: border-box",
-            "pointer-events: auto", // ...except on the input itself
-            `padding: 0 ${GAME_SCREEN_CONSTANTS.INPUT_PADDING_X}px`,
-            `font: ${GAME_SCREEN_CONSTANTS.BUTTON_FONT_SIZE}px Arial, sans-serif`,
-            "background: #f4efe6",
-            "border: 2px solid #d9d0b8",
-            `border-radius: ${GAME_SCREEN_CONSTANTS.BUTTON_RADIUS}px`,
-            `color: ${GAME_SCREEN_CONSTANTS.PANEL_TEXT}`,
-            "outline: none",
-        ].join(";");
+            // Keep the overlay lined up with the canvas when the window resizes.
+            // (Wait a frame so main.ts has resized the stage first.)
+            window.addEventListener("resize", () =>
+                requestAnimationFrame(() => this.updateInput())
+            );
+        }
 
-        input.addEventListener("keydown", (event) => {
-            if (event.key === "Enter") {
-                this.submitInput();
-            }
-        });
+        if (this.overlay && !this.input) {
+            const input = document.createElement("input");
+            input.type = "text";
+            input.placeholder = "Enter your probability";
+            input.autocomplete = "off";
+            input.style.cssText = [
+                "position: absolute",
+                "box-sizing: border-box",
+                "pointer-events: auto", // ...except on the input itself
+                `padding: 0 ${GAME_SCREEN_CONSTANTS.INPUT_PADDING_X}px`,
+                `font: ${GAME_SCREEN_CONSTANTS.BUTTON_FONT_SIZE}px Arial, sans-serif`,
+                "background: #f4efe6",
+                "border: 2px solid #d9d0b8",
+                `border-radius: ${GAME_SCREEN_CONSTANTS.BUTTON_RADIUS}px`,
+                `color: ${GAME_SCREEN_CONSTANTS.PANEL_TEXT}`,
+                "outline: none",
+            ].join(";");
 
-        overlay.appendChild(input);
-        document.body.appendChild(overlay);
+            input.addEventListener("keydown", (event) => {
+                if (event.key === "Enter") {
+                    this.submitInput();
+                }
+            });
 
-        this.overlay = overlay;
-        this.input = input;
+            this.overlay.appendChild(input);
+            this.input = input;
+        }
 
-        // Keep the overlay lined up with the canvas when the window resizes.
-        // (Wait a frame so main.ts has resized the stage first.)
-        window.addEventListener("resize", () =>
-            requestAnimationFrame(() => this.updateInput())
-        );
+        if (this.overlay && !this.guessInput) {
+            const guessInput = document.createElement("input");
+            guessInput.type = "text";
+            guessInput.placeholder = "Enter card (e.g. AH)";
+            guessInput.autocomplete = "off";
+            guessInput.style.cssText = [
+                "position: absolute",
+                "box-sizing: border-box",
+                "pointer-events: auto", // ...except on the input itself
+                `padding: 0 ${GAME_SCREEN_CONSTANTS.INPUT_PADDING_X}px`,
+                `font: ${GAME_SCREEN_CONSTANTS.BUTTON_FONT_SIZE}px Arial, sans-serif`,
+                "background: #f4efe6",
+                "border: 2px solid #d9d0b8",
+                `border-radius: ${GAME_SCREEN_CONSTANTS.BUTTON_RADIUS}px`,
+                `color: ${GAME_SCREEN_CONSTANTS.PANEL_TEXT}`,
+                "outline: none",
+            ].join(";");
+
+            guessInput.addEventListener("keydown", (event) => {
+                if (event.key === "Enter") {
+                    this.submitGuess();
+                }
+            });
+
+            guessInput.addEventListener("input", () => {
+                this.clearGuessError();
+            });
+
+            this.overlay.appendChild(guessInput);
+            this.guessInput = guessInput;
+        }
     }
 
     private updateInput(): void {
-        if (!this.overlay || !this.input || !this.inputRect) {
+        if (!this.overlay) {
             return;
         }
 
         const stage = this.group.getStage();
-        const visible =
-            this.wantInput && !this.modalOpen && this.group.visible() && stage !== null;
+        const anyVisible =
+            (this.wantInput || this.wantGuessInput) &&
+            !this.modalOpen &&
+            this.group.visible() &&
+            stage !== null;
 
-        this.overlay.style.display = visible ? "block" : "none";
+        this.overlay.style.display = anyVisible ? "block" : "none";
 
-        if (!visible || !stage) {
+        if (!anyVisible || !stage) {
             return;
         }
 
@@ -466,15 +605,31 @@ export class GameScreenView implements View {
         this.overlay.style.top = `${canvasBox.top}px`;
         this.overlay.style.transform = `scale(${stage.scaleX()})`;
 
-        this.input.style.left = `${this.inputRect.x}px`;
-        this.input.style.top = `${this.inputRect.y}px`;
-        this.input.style.width = `${this.inputRect.width}px`;
-        this.input.style.height = `${this.inputRect.height}px`;
+        if (this.input && this.inputRect) {
+            this.input.style.display = this.wantInput ? "block" : "none";
+            this.input.style.left = `${this.inputRect.x}px`;
+            this.input.style.top = `${this.inputRect.y}px`;
+            this.input.style.width = `${this.inputRect.width}px`;
+            this.input.style.height = `${this.inputRect.height}px`;
+        }
+
+        if (this.guessInput && this.guessInputRect) {
+            this.guessInput.style.display = this.wantGuessInput ? "block" : "none";
+            this.guessInput.style.left = `${this.guessInputRect.x}px`;
+            this.guessInput.style.top = `${this.guessInputRect.y}px`;
+            this.guessInput.style.width = `${this.guessInputRect.width}px`;
+            this.guessInput.style.height = `${this.guessInputRect.height}px`;
+        }
     }
 
     private focusInput(): void {
-        if (this.wantInput && !this.modalOpen && this.group.visible()) {
+        if (this.modalOpen || !this.group.visible()) {
+            return;
+        }
+        if (this.wantInput) {
             this.input?.focus();
+        } else if (this.wantGuessInput) {
+            this.guessInput?.focus();
         }
     }
 
@@ -489,8 +644,121 @@ export class GameScreenView implements View {
             return; // nothing typed, so don't count it as a wrong answer
         }
 
+        this.lastAction = "probability";
         this.input.value = "";
         this.onAnswer(value);
+    }
+
+    private submitGuess(): void {
+        if (!this.guessInput || !this.canGuess) {
+            return;
+        }
+
+        const raw = this.guessInput.value.trim();
+        if (raw === "") {
+            this.showGuessError();
+            return;
+        }
+
+        const card = this.parseCardInput(raw);
+        if (!card) {
+            this.showGuessError();
+            return;
+        }
+
+        this.clearGuessError();
+        this.lastAction = "guess";
+        this.guessInput.value = "";
+        this.onGuess(card);
+    }
+
+    private showGuessError(): void {
+        this.guessError = true;
+        if (this.guessFeedbackText) {
+            this.guessFeedbackText.text("Invalid format!");
+            this.guessFeedbackText.fill(COLORS.button);
+        }
+        this.group.getLayer()?.batchDraw();
+    }
+
+    private clearGuessError(): void {
+        if (!this.guessError) {
+            return;
+        }
+        this.guessError = false;
+        if (this.guessFeedbackText && this.guessFeedbackText.text() === "Invalid format!") {
+            this.guessFeedbackText.text("");
+            this.group.getLayer()?.batchDraw();
+        }
+    }
+
+    private parseCardInput(text: string): Card | null {
+        const cleaned = text.trim().toUpperCase().replace(/[\s-_]+/g, "");
+        if (!cleaned) return null;
+
+        // Direct match on card.id (e.g. "H-A" or "HA")
+        const directMatch = this.currentDeck.find(
+            (c) =>
+                c.id.toUpperCase() === text.trim().toUpperCase() ||
+                c.id.replace(/[-_]/g, "").toUpperCase() === cleaned
+        );
+        if (directMatch) return directMatch;
+
+        const suitMap: Record<string, Suit> = {
+            H: "hearts",
+            D: "diamonds",
+            C: "clubs",
+            S: "spades",
+        };
+
+        const suitPrefixes: Record<Suit, string> = {
+            hearts: "H",
+            diamonds: "D",
+            clubs: "C",
+            spades: "S",
+        };
+
+        const validRanks = new Set([
+            "A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"
+        ]);
+
+        // Match <rank><suit> (e.g., "AH", "10S", "1S", "KC", "4D")
+        const rankSuitMatch = cleaned.match(/^([A-Z0-9]{1,2})([HDCS])$/);
+        if (rankSuitMatch && rankSuitMatch[1] && rankSuitMatch[2]) {
+            let rank = rankSuitMatch[1];
+            const suitKey = rankSuitMatch[2];
+            const suit = suitMap[suitKey];
+            if (rank === "1") rank = "A";
+
+            if (suit && validRanks.has(rank)) {
+                const found = this.currentDeck.find(
+                    (c) => c.suit === suit && c.rank.toUpperCase() === rank
+                );
+                if (found) return found;
+
+                return { id: `${suitPrefixes[suit]}-${rank}`, suit, rank: rank as Rank };
+            }
+        }
+
+        // Match <suit><rank> (e.g., "HA", "S10", "S1", "CK", "D4")
+        const suitRankMatch = cleaned.match(/^([HDCS])([A-Z0-9]{1,2})$/);
+        if (suitRankMatch && suitRankMatch[1] && suitRankMatch[2]) {
+            const suitKey = suitRankMatch[1];
+            const suit = suitMap[suitKey];
+            let rank = suitRankMatch[2];
+            if (rank === "1") rank = "A";
+
+            if (suit && validRanks.has(rank)) {
+                const found = this.currentDeck.find(
+                    (c) => c.suit === suit && c.rank.toUpperCase() === rank
+                );
+                if (found) return found;
+
+                return { id: `${suitPrefixes[suit]}-${rank}`, suit, rank: rank as Rank };
+            }
+        }
+
+        return null;
     }
 
     private addText(
@@ -579,11 +847,8 @@ export class GameScreenView implements View {
         panel.add(
             new Konva.Text({
                 x: pad,
-                y: pad,
+                y: pad + c.PANEL_TITLE_FONT_SIZE + 4,
                 width: width - 2 * pad,
-                height: c.PANEL_TITLE_FONT_SIZE,
-                align: "right",
-                verticalAlign: "middle",
                 text: `${cards.length} total`,
                 fontSize: c.PANEL_BODY_FONT_SIZE,
                 fontFamily: "Arial",

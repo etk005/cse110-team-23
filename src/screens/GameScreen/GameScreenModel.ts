@@ -5,6 +5,7 @@ import type {
     HintKind
 } from "../../shared/types.ts";
 import { getNextInformation } from "../../game/informationEngine.ts";
+import { calculateReward, CHIPS_PER_GUESS } from "../../game/rewardEngine.ts";
 import { generateQuestion, probabilityOf } from "../../game/questionGenerator.ts";
 import { getRemainingPossibleCards } from "../../cardFilter.ts";
 
@@ -43,7 +44,8 @@ export class GameScreenModel {
             "strikes": 0,
             "choosingHint": false,
             "canViewRemainingCards": false,
-            "probabilityRange": null
+            "probabilityRange": null,
+            "incorrectlyGuessedCards": []
         };
         this.level = null;
     }
@@ -68,7 +70,9 @@ export class GameScreenModel {
             strikes: 0,
             choosingHint: false,
             canViewRemainingCards: false,
-            probabilityRange: null
+            probabilityRange: null,
+            incorrectlyGuessedCards: [],
+            hasGuessedThisQuestion: false,
         };
 
         this.revealNextClue(state);
@@ -211,6 +215,7 @@ export class GameScreenModel {
         this.state.probabilityRange = null;
         this.state.canViewRemainingCards = false;
         this.state.choosingHint = false;
+        this.state.hasGuessedThisQuestion = false;
     }
 
     /**
@@ -268,5 +273,25 @@ export class GameScreenModel {
         }
         // Include a probability of exactly 1 in the last band.
         return buckets[buckets.length - 1] ?? { low: 0, high: 1 };
+    }
+
+    guessCard(card: Card): boolean {
+        if (this.state.status !== "playing") return false;
+        if (this.state.hasGuessedThisQuestion) return false;
+        this.state.hasGuessedThisQuestion = true;
+
+        if (card.id === this.hiddenCard!.id) {
+            this.state.status = "won";
+            this.state.hiddenCard.isRevealed = true;
+            return true;
+        }
+        this.state.incorrectlyGuessedCards.push(card);
+        return false;
+    }
+
+    getReward(): number {
+        const remainingPossibleCardIds = this.state.remainingPossibleCards.map(card => card.id);
+        const incorrectlyGuessedCardIds = this.state.incorrectlyGuessedCards.map(card => card.id);
+        return calculateReward(new Set(remainingPossibleCardIds).difference(new Set(incorrectlyGuessedCardIds)).size);
     }
 }

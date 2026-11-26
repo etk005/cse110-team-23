@@ -1,4 +1,4 @@
-import type { HintKind, Level } from "../../shared/types.ts";
+import type { Card, HintKind, Level } from "../../shared/types.ts";
 import { ScreenController } from "../../types.ts";
 import type { ScreenSwitcher } from "../../types.ts";
 import { GameScreenModel } from "./GameScreenModel.ts";
@@ -6,6 +6,7 @@ import { GameScreenView } from "./GameScreenView.ts";
 import { levelPoints } from "../../game/playerResources.ts";
 import type { PlayerResources } from "../../game/playerResources.ts";
 import { COST_OF_CLUE } from "../../constants.ts";
+import { CHIPS_PER_GUESS } from "../../game/rewardEngine.ts";
 
 /** 
  * Coordinates the game screen: connects model state to view rendering and input callbacks. 
@@ -28,7 +29,8 @@ export class GameScreenController extends ScreenController {
             () => this.screenSwitcher.switchToScreen({ type: "menu" }),
             () => this.handleNext(),
             () => this.handleBuyInfo(),
-            (kind) => this.handleChooseHint(kind)
+            (kind) => this.handleChooseHint(kind),
+            (guess) => this.handleGuess(guess)
         );
 
         // keep the coins/score readout current when rewards or purchases change them
@@ -67,14 +69,14 @@ export class GameScreenController extends ScreenController {
     }
 
     private handleNext(): void {
-        if (!this.model.isWaitingForNext()) {
-            return;
-        }
-
         const state = this.model.getState();
 
         if (state.status === "won") {
             this.showResults();
+            return;
+        }
+
+        if (!this.model.isWaitingForNext()) {
             return;
         }
 
@@ -187,5 +189,31 @@ export class GameScreenController extends ScreenController {
 
     getView(): GameScreenView {
         return this.view;
+    }
+
+    private handleGuess(card: Card) {
+        if (this.model.isWaitingForNext()) {
+            return;
+        }
+        const state = this.model.getState();
+        if (state.hasGuessedThisQuestion) {
+            this.updateView("Already guessed this question!");
+            return;
+        }
+        let coins = this.resources.getCoins();
+        if (coins < CHIPS_PER_GUESS) {
+            this.updateView("Not enough coins!");
+            return;
+        }
+        coins -= CHIPS_PER_GUESS;
+        this.resources.setCoins(coins);
+        this.view.showCoinsSpent(CHIPS_PER_GUESS);
+        if (this.model.guessCard(card)) {
+            coins += this.model.getReward();
+            this.resources.setCoins(coins);
+            this.updateView("You guessed it!", true);
+        } else {
+            this.updateView("Keep trying!");
+        }
     }
 }
