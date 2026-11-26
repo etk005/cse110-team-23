@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { Level } from "../shared/types.ts";
 import { GameScreenModel } from "../screens/GameScreen/GameScreenModel.ts";
 import { getRemainingPossibleCards } from "../cardFilter.ts";
+import { calculateReward } from "../game/rewardEngine.ts";
 
 const level1: Level = {
     id: 1,
@@ -480,6 +481,87 @@ describe("GameScreenModel", () => {
             model.nextQuestion();
 
             expect(model.buyHint("cards")).toBe("bought");
+        });
+    });
+
+    describe("guessing final card", () => {
+        it("returns true, reveals the hidden card, and marks status as won on correct guess", () => {
+            // With Math.random() mocked to 0, hiddenCard is the first card in level1 deck (H-A).
+            const correctCard = level1.deck[0]!;
+            const result = model.guessCard(correctCard);
+
+            expect(result).toBe(true);
+            const state = model.getState();
+            expect(state.status).toBe("won");
+            expect(state.hiddenCard.isRevealed).toBe(true);
+            expect(state.hasGuessedThisQuestion).toBe(true);
+        });
+
+        it("returns false, records the card in incorrectlyGuessedCards, and stays playing on wrong guess", () => {
+            const wrongCard = level1.deck[1]!; // H-2 (not H-A)
+            const result = model.guessCard(wrongCard);
+
+            expect(result).toBe(false);
+            const state = model.getState();
+            expect(state.status).toBe("playing");
+            expect(state.hiddenCard.isRevealed).toBe(false);
+            expect(state.hasGuessedThisQuestion).toBe(true);
+            expect(state.incorrectlyGuessedCards).toContainEqual(wrongCard);
+        });
+
+        it("allows only one guess per question and rejects subsequent guesses", () => {
+            const wrongCard1 = level1.deck[1]!;
+            const wrongCard2 = level1.deck[2]!;
+
+            expect(model.guessCard(wrongCard1)).toBe(false);
+            // Second guess on same question should fail
+            expect(model.guessCard(wrongCard2)).toBe(false);
+
+            const state = model.getState();
+            expect(state.incorrectlyGuessedCards).toHaveLength(1);
+            expect(state.incorrectlyGuessedCards[0]).toEqual(wrongCard1);
+        });
+
+        it("resets hasGuessedThisQuestion on nextQuestion() so player can guess again", () => {
+            const wrongCard1 = level1.deck[1]!;
+            model.guessCard(wrongCard1);
+            expect(model.getState().hasGuessedThisQuestion).toBe(true);
+
+            // Answer question to advance
+            model.submitAnswer(correctAnswer());
+            model.nextQuestion();
+
+            expect(model.getState().hasGuessedThisQuestion).toBe(false);
+
+            const wrongCard2 = level1.deck[2]!;
+            expect(model.guessCard(wrongCard2)).toBe(false);
+            expect(model.getState().incorrectlyGuessedCards).toHaveLength(2);
+        });
+
+        it("disallows guesses when game status is not playing", () => {
+            // Lose the game by getting max strikes
+            for (let i = 0; i < level1.maxStrikes; i++) {
+                model.submitAnswer(wrongAnswer());
+            }
+            expect(model.getState().status).toBe("lost");
+
+            const card = level1.deck[0]!;
+            expect(model.guessCard(card)).toBe(false);
+        });
+
+        it("calculates reward correctly using candidate count", () => {
+            const initialReward = model.getReward();
+            const initialCandidates = model.getState().remainingPossibleCards.length;
+            expect(initialReward).toBe(calculateReward(initialCandidates));
+
+            // Make an incorrect guess that is among remaining possible cards
+            const wrongCard = model.getState().remainingPossibleCards.find(c => c.id !== level1.deck[0]!.id) ?? level1.deck[1]!;
+            model.guessCard(wrongCard);
+
+            const remainingCandidates = model.getState().remainingPossibleCards.filter(
+                c => !model.getState().incorrectlyGuessedCards.some(ic => ic.id === c.id)
+            ).length;
+            expect(model.getReward()).toBe(calculateReward(remainingCandidates));
         });
     });
 });

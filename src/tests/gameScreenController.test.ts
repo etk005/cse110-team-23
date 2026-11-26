@@ -1,10 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Screen, ScreenSwitcher } from "../types.ts";
-import type { GameState, HintKind, Level } from "../shared/types.ts";
+import type { Card, GameState, HintKind, Level } from "../shared/types.ts";
 import { GameScreenModel } from "../screens/GameScreen/GameScreenModel.ts";
 import { PlayerResources } from "../game/playerResources.ts";
 import { COST_OF_CLUE } from "../constants.ts";
 import { saveCoins } from "../lib/playerCoins.ts";
+import { CHIPS_PER_GUESS } from "../game/rewardEngine.ts";
 
 vi.mock("../lib/playerCoins.ts", () => ({
     saveCoins: vi.fn(),
@@ -35,6 +36,7 @@ const viewMock = vi.hoisted(() => ({
     onNext: undefined as (() => void) | undefined,
     onBuyInfo: undefined as (() => void) | undefined,
     onChooseHint: undefined as ((kind: HintKind) => Promise<void>) | undefined,
+    onGuess: undefined as ((card: Card) => void) | undefined,
     render: vi.fn(),
     updateResources: vi.fn(),
     showCoinsSpent: vi.fn(),
@@ -50,13 +52,15 @@ vi.mock("../screens/GameScreen/GameScreenView.ts", () => ({
             onMenu: () => void,
             onNext: () => void,
             onBuyInfo: () => void,
-            onChooseHint: (kind: HintKind) => Promise<void>
+            onChooseHint: (kind: HintKind) => Promise<void>,
+            onGuess?: (card: Card) => void
         ) {
             viewMock.onAnswer = onAnswer;
             viewMock.onMenu = onMenu;
             viewMock.onNext = onNext;
             viewMock.onBuyInfo = onBuyInfo;
             viewMock.onChooseHint = onChooseHint;
+            viewMock.onGuess = onGuess;
         }
 
         render = viewMock.render;
@@ -437,6 +441,105 @@ describe("GameScreenController", () => {
             });
             expect(viewMock.updateResources).toHaveBeenLastCalledWith(
                 coinsAfterPurchases, 0, 10
+            );
+        });
+    });
+
+    describe("guessing", () => {
+        it("rejects guess and shows feedback when not enough coins", () => {
+            resources.setCoins(CHIPS_PER_GUESS - 1);
+            viewMock.onGuess!({ id: "H-A", suit: "hearts", rank: "A" });
+
+            expect(resources.getCoins()).toBe(CHIPS_PER_GUESS - 1);
+            expect(viewMock.render).toHaveBeenLastCalledWith(
+                expect.anything(),
+                expect.anything(),
+                "Not enough coins!",
+                false
+            );
+        });
+
+        it("deducts coins and shows Keep trying! when guess is wrong", () => {
+            resources.setCoins(50);
+            // With Math.random() mocked to 0, hiddenCard is the first card (H-A).
+            // Guess a wrong card (H-2).
+            viewMock.onGuess!({ id: "H-2", suit: "hearts", rank: "2" });
+
+            expect(resources.getCoins()).toBe(50 - CHIPS_PER_GUESS);
+            expect(viewMock.showCoinsSpent).toHaveBeenCalledWith(CHIPS_PER_GUESS);
+            expect(viewMock.render).toHaveBeenLastCalledWith(
+                expect.anything(),
+                expect.anything(),
+                "Keep trying!",
+                false
+            );
+        });
+
+        it("deducts coins, adds reward, and wins when guess is correct", () => {
+            resources.setCoins(50);
+            // With Math.random() mocked to 0, hiddenCard is H-A.
+            viewMock.onGuess!({ id: "H-A", suit: "hearts", rank: "A" });
+
+            expect(currentState().status).toBe("won");
+            expect(viewMock.showCoinsSpent).toHaveBeenCalledWith(CHIPS_PER_GUESS);
+            expect(viewMock.render).toHaveBeenLastCalledWith(
+                expect.anything(),
+                expect.anything(),
+                "You guessed it!",
+                true
+            );
+            expect(resources.getCoins()).toBeGreaterThan(50 - CHIPS_PER_GUESS);
+        });
+
+        it("only allows guessing once per question", () => {
+            resources.setCoins(100);
+            viewMock.onGuess!({ id: "H-2", suit: "hearts", rank: "2" });
+            expect(resources.getCoins()).toBe(100 - CHIPS_PER_GUESS);
+
+            // Second guess on same question should be blocked
+            viewMock.onGuess!({ id: "H-3", suit: "hearts", rank: "3" });
+            expect(resources.getCoins()).toBe(100 - CHIPS_PER_GUESS);
+            expect(viewMock.render).toHaveBeenLastCalledWith(
+                expect.anything(),
+                expect.anything(),
+                "Already guessed this question!",
+                false
+            );
+        });
+
+        it("does not allow guessing between questions", () => {
+            resources.setCoins(100);
+            viewMock.onAnswer!(correctAnswer());
+            // Now waiting for next question
+            viewMock.onGuess!({ id: "H-2", suit: "hearts", rank: "2" });
+            expect(resources.getCoins()).toBe(100);
+        });
+
+        it("allows guessing again after advancing to the next question", () => {
+            resources.setCoins(100);
+            viewMock.onGuess!({ id: "H-2", suit: "hearts", rank: "2" });
+            expect(resources.getCoins()).toBe(100 - CHIPS_PER_GUESS);
+
+            viewMock.onAnswer!(correctAnswer());
+            viewMock.onNext!();
+
+            expect(currentState().hasGuessedThisQuestion).toBe(false);
+            viewMock.onGuess!({ id: "H-3", suit: "hearts", rank: "3" });
+            expect(resources.getCoins()).toBe(100 - 2 * CHIPS_PER_GUESS);
+        });
+
+        it("advances to results screen when Finish Level is clicked after winning by guess", () => {
+            resources.setCoins(50);
+            viewMock.onGuess!({ id: "H-A", suit: "hearts", rank: "A" });
+            expect(currentState().status).toBe("won");
+
+            viewMock.onNext!();
+
+            expect(switchToScreen).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    type: "result",
+                    won: true,
+                })
             );
         });
     });
