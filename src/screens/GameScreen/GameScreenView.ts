@@ -253,16 +253,15 @@ export class GameScreenView implements View {
                 submitWidth,
                 () => this.submitInput()
             );
-            const buyX = state.canViewRemainingCards
-                ? layout.REMAINING_PANEL_X +
-                  layout.REMAINING_PANEL_WIDTH +
-                  pad * 2
-                : layout.REMAINING_PANEL_X;
+            const buyX = layout.REMAINING_PANEL_X;
 
-            const buttonY =
-                layout.REMAINING_PANEL_Y +
-                layout.REMAINING_PANEL_HEIGHT -
-                layout.BUTTON_HEIGHT;
+            const buttonY = state.canViewRemainingCards
+                ? layout.REMAINING_PANEL_Y +
+                  layout.REMAINING_PANEL_HEIGHT +
+                  pad
+                : layout.REMAINING_PANEL_Y +
+                  layout.REMAINING_PANEL_HEIGHT -
+                  layout.BUTTON_HEIGHT;
             const hintButtonWidth = layout.NEXT_BUTTON_WIDTH;
 
             if (state.choosingHint) {
@@ -848,11 +847,8 @@ export class GameScreenView implements View {
         panel.add(
             new Konva.Text({
                 x: pad,
-                y: pad,
+                y: pad + c.PANEL_TITLE_FONT_SIZE + 4,
                 width: width - 2 * pad,
-                height: c.PANEL_TITLE_FONT_SIZE,
-                align: "right",
-                verticalAlign: "middle",
                 text: `${cards.length} total`,
                 fontSize: c.PANEL_BODY_FONT_SIZE,
                 fontFamily: "Arial",

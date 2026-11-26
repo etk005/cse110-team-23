@@ -50,6 +50,19 @@ function makeMockState(overrides: Partial<GameState> = {}): GameState {
     };
 }
 
+function findButtonWithLabel(group: Konva.Group, label: string): Konva.Group | undefined {
+    const allGroups = group.find<Konva.Group>("Group");
+    return allGroups.find((g) => {
+        const textNode = g.findOne<Konva.Text>("Text");
+        return textNode?.text() === label;
+    });
+}
+
+function findKonvaTextWithContent(group: Konva.Group, textContent: string): Konva.Text | undefined {
+    const allTexts = group.find<Konva.Text>("Text");
+    return allTexts.find((t) => t.text() === textContent);
+}
+
 describe("GameScreenView - Guessing Functionality", () => {
     let onAnswer: (answer: string) => void;
     let onMenu: () => void;
@@ -145,19 +158,6 @@ describe("GameScreenView - Guessing Functionality", () => {
     });
 
     describe("UI Button and Input Visibility", () => {
-        function findButtonWithLabel(group: Konva.Group, label: string): Konva.Group | undefined {
-            const allGroups = group.find<Konva.Group>("Group");
-            return allGroups.find((g) => {
-                const textNode = g.findOne<Konva.Text>("Text");
-                return textNode?.text() === label;
-            });
-        }
-
-        function findKonvaTextWithContent(group: Konva.Group, textContent: string): Konva.Text | undefined {
-            const allTexts = group.find<Konva.Text>("Text");
-            return allTexts.find((t) => t.text() === textContent);
-        }
-
         it("shows the Guess button during an active question when player hasn't guessed yet", () => {
             view.render(makeMockState(), []);
             const group = view.getGroup();
@@ -217,14 +217,6 @@ describe("GameScreenView - Guessing Functionality", () => {
     });
 
     describe("Hint Options Layout", () => {
-        function findButtonWithLabel(group: Konva.Group, label: string): Konva.Group | undefined {
-            const allGroups = group.find<Konva.Group>("Group");
-            return allGroups.find((g) => {
-                const textNode = g.findOne<Konva.Text>("Text");
-                return textNode?.text() === label;
-            });
-        }
-
         it("stacks hint options vertically so they do not overlap the right column / guess card", () => {
             view.render(makeMockState({ choosingHint: true }), []);
             const group = view.getGroup();
@@ -272,6 +264,24 @@ describe("GameScreenView - Guessing Functionality", () => {
 
             expect(cardsBtn).toBeUndefined();
             expect(rangeBtn).toBeDefined();
+
+            // When remaining cards are visible, hint button stays in left column
+            const rangeBtnRect = rangeBtn!.findOne<Konva.Rect>("Rect")!;
+            expect(rangeBtn!.x() + rangeBtnRect.width()).toBeLessThan(384);
+        });
+
+        it("renders the remaining possible cards panel without occluding the right column", () => {
+            view.render(makeMockState({ canViewRemainingCards: true }), []);
+            const group = view.getGroup();
+
+            const panelText = findKonvaTextWithContent(group, "Remaining possible cards");
+            expect(panelText).toBeDefined();
+
+            const panelGroup = panelText!.parent as Konva.Group;
+            const panelRect = panelGroup.findOne<Konva.Rect>("Rect")!;
+
+            // Panel must not extend into the right column (384px)
+            expect(panelGroup.x() + panelRect.width()).toBeLessThan(384);
         });
     });
 

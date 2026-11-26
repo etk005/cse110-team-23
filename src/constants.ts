@@ -110,7 +110,7 @@ export const GAME_SCREEN_CONSTANTS = {
 
     // just under the visible card (card.png has transparent padding below it)
     REMAINING_PANEL_Y: CARD_Y + VISIBLE_CARD_BOTTOM_IN_IMAGE + H / 50,
-    REMAINING_PANEL_WIDTH: (W * 2) / 7,
+    REMAINING_PANEL_WIDTH: RIGHT_COLUMN_X - LOGO_X - PANEL_GAP,
     REMAINING_PANEL_HEIGHT: H / 7,
     REMAINING_PANEL_X: LOGO_X,
     OUTLINE_BUTTON_FILL: "#fffdf4",
