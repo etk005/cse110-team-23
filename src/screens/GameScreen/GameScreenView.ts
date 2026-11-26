@@ -266,32 +266,37 @@ export class GameScreenView implements View {
             const hintButtonWidth = layout.NEXT_BUTTON_WIDTH;
 
             if (state.choosingHint) {
-                let optionX = buyX;
+                const hintOptions: { label: string; kind: HintKind }[] = [];
                 if (!state.canViewRemainingCards) {
-                    this.addButton(
-                        "See remaining cards",
-                        optionX,
-                        buttonY,
-                        hintButtonWidth,
-                        () => {
-                            this.lastAction = "hint";
-                            this.onChooseHint("cards");
-                        }
-                    );
-                    optionX += hintButtonWidth + pad;
+                    hintOptions.push({
+                        label: "See remaining cards",
+                        kind: "cards",
+                    });
                 }
                 if (state.probabilityRange === null) {
+                    hintOptions.push({
+                        label: "Probability range",
+                        kind: "range",
+                    });
+                }
+
+                hintOptions.forEach((option, index) => {
+                    const y =
+                        hintOptions.length > 1
+                            ? buttonY - (hintOptions.length - 1 - index) * (layout.BUTTON_HEIGHT + pad)
+                            : buttonY;
+
                     this.addButton(
-                        "Probability range",
-                        optionX,
-                        buttonY,
+                        option.label,
+                        buyX,
+                        y,
                         hintButtonWidth,
                         () => {
                             this.lastAction = "hint";
-                            this.onChooseHint("range");
+                            this.onChooseHint(option.kind);
                         }
                     );
-                }
+                });
             } else {
                 this.addButton(
                     "Buy Clue",

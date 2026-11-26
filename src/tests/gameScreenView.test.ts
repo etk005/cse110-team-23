@@ -216,6 +216,65 @@ describe("GameScreenView - Guessing Functionality", () => {
         });
     });
 
+    describe("Hint Options Layout", () => {
+        function findButtonWithLabel(group: Konva.Group, label: string): Konva.Group | undefined {
+            const allGroups = group.find<Konva.Group>("Group");
+            return allGroups.find((g) => {
+                const textNode = g.findOne<Konva.Text>("Text");
+                return textNode?.text() === label;
+            });
+        }
+
+        it("stacks hint options vertically so they do not overlap the right column / guess card", () => {
+            view.render(makeMockState({ choosingHint: true }), []);
+            const group = view.getGroup();
+
+            const cardsBtn = findButtonWithLabel(group, "See remaining cards");
+            const rangeBtn = findButtonWithLabel(group, "Probability range");
+
+            expect(cardsBtn).toBeDefined();
+            expect(rangeBtn).toBeDefined();
+
+            // Both buttons must share the same horizontal X coordinate (stacked vertically)
+            expect(cardsBtn!.x()).toBe(rangeBtn!.x());
+
+            // "See remaining cards" sits on top of "Probability range"
+            expect(cardsBtn!.y()).toBeLessThan(rangeBtn!.y());
+
+            // Neither button's right boundary extends into the right column (which starts at 384)
+            const cardsBtnRect = cardsBtn!.findOne<Konva.Rect>("Rect")!;
+            const rangeBtnRect = rangeBtn!.findOne<Konva.Rect>("Rect")!;
+
+            expect(cardsBtn!.x() + cardsBtnRect.width()).toBeLessThan(384);
+            expect(rangeBtn!.x() + rangeBtnRect.width()).toBeLessThan(384);
+        });
+
+        it("calls onChooseHint when clicking each hint option", () => {
+            view.render(makeMockState({ choosingHint: true }), []);
+            const group = view.getGroup();
+
+            const cardsBtn = findButtonWithLabel(group, "See remaining cards");
+            const rangeBtn = findButtonWithLabel(group, "Probability range");
+
+            cardsBtn?.fire("click");
+            expect(onChooseHint).toHaveBeenCalledWith("cards");
+
+            rangeBtn?.fire("click");
+            expect(onChooseHint).toHaveBeenCalledWith("range");
+        });
+
+        it("renders a single button at the standard position when only one hint option is available", () => {
+            view.render(makeMockState({ choosingHint: true, canViewRemainingCards: true }), []);
+            const group = view.getGroup();
+
+            const cardsBtn = findButtonWithLabel(group, "See remaining cards");
+            const rangeBtn = findButtonWithLabel(group, "Probability range");
+
+            expect(cardsBtn).toBeUndefined();
+            expect(rangeBtn).toBeDefined();
+        });
+    });
+
     describe("Guess Submission & Feedback", () => {
         it("triggers showGuessError and displays 'Invalid format!' when submitting invalid text", () => {
             view.render(makeMockState(), []);

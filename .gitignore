@@ -11,3 +11,4 @@ npm-debug.log*
 !.vscode/extensions.json
 .idea/
 *.tsbuildinfo
+.playwright-mcp/
