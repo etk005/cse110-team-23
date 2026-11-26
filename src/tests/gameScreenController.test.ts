@@ -527,5 +527,78 @@ describe("GameScreenController", () => {
                 })
             );
         });
+
+        it("allows player one last guess at the end of all questions", () => {
+            resources.setCoins(100);
+
+            // Answer question 1 and advance
+            viewMock.onAnswer!(correctAnswer());
+            viewMock.onNext!();
+
+            // Answer question 2 and advance
+            viewMock.onAnswer!(correctAnswer());
+            viewMock.onNext!();
+
+            // Make a guess on question 3
+            viewMock.onGuess!({ id: "H-2", suit: "hearts", rank: "2" });
+            expect(resources.getCoins()).toBe(100 - CHIPS_PER_GUESS);
+
+            // Answer question 3 (completes all questions)
+            viewMock.onAnswer!(correctAnswer());
+            expect(currentState().status).toBe("won");
+            // Opportunity for one last guess is unlocked
+            expect(currentState().hasGuessedThisQuestion).toBe(false);
+
+            // Now guess the secret card (H-A) at the end of all questions
+            viewMock.onGuess!({ id: "H-A", suit: "hearts", rank: "A" });
+            expect(currentState().hiddenCard.isRevealed).toBe(true);
+            expect(currentState().hiddenCard.card).toEqual({ id: "H-A", suit: "hearts", rank: "A" });
+            expect(viewMock.render).toHaveBeenLastCalledWith(
+                expect.anything(),
+                expect.anything(),
+                "You guessed it!",
+                true
+            );
+
+            // Finish level
+            viewMock.onNext!();
+            expect(switchToScreen).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    type: "result",
+                    won: true,
+                })
+            );
+        });
+
+        it("only allows one guess attempt at the end of all questions", () => {
+            resources.setCoins(100);
+
+            // Complete all 3 questions
+            viewMock.onAnswer!(correctAnswer());
+            viewMock.onNext!();
+            viewMock.onAnswer!(correctAnswer());
+            viewMock.onNext!();
+            viewMock.onAnswer!(correctAnswer());
+
+            // First guess at the end of questions (wrong card)
+            viewMock.onGuess!({ id: "H-2", suit: "hearts", rank: "2" });
+            expect(resources.getCoins()).toBe(100 - CHIPS_PER_GUESS);
+            expect(viewMock.render).toHaveBeenLastCalledWith(
+                expect.anything(),
+                expect.anything(),
+                "Keep trying!",
+                true
+            );
+
+            // Second guess should be rejected
+            viewMock.onGuess!({ id: "H-3", suit: "hearts", rank: "3" });
+            expect(resources.getCoins()).toBe(100 - CHIPS_PER_GUESS);
+            expect(viewMock.render).toHaveBeenLastCalledWith(
+                expect.anything(),
+                expect.anything(),
+                "Already guessed this question!",
+                true
+            );
+        });
     });
 });

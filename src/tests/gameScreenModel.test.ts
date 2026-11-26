@@ -494,6 +494,7 @@ describe("GameScreenModel", () => {
             const state = model.getState();
             expect(state.status).toBe("won");
             expect(state.hiddenCard.isRevealed).toBe(true);
+            expect(state.hiddenCard.card).toEqual(correctCard);
             expect(state.hasGuessedThisQuestion).toBe(true);
         });
 
@@ -562,6 +563,39 @@ describe("GameScreenModel", () => {
                 c => !model.getState().incorrectlyGuessedCards.some(ic => ic.id === c.id)
             ).length;
             expect(model.getReward()).toBe(calculateReward(remainingCandidates));
+        });
+
+        it("resets hasGuessedThisQuestion when completing the final question so player gets one last guess", () => {
+            // Player guesses during the questions (e.g. before the last question)
+            const wrongCard = level1.deck[1]!;
+            model.guessCard(wrongCard);
+            expect(model.getState().hasGuessedThisQuestion).toBe(true);
+
+            // Complete all questions
+            completeGame();
+            expect(model.getState().status).toBe("won");
+            // The user is given one last guess at the end of all questions
+            expect(model.getState().hasGuessedThisQuestion).toBe(false);
+
+            // Now guess the correct card on their final guess
+            const correctCard = level1.deck[0]!;
+            const result = model.guessCard(correctCard);
+            expect(result).toBe(true);
+            expect(model.getState().hiddenCard.isRevealed).toBe(true);
+            expect(model.getState().hiddenCard.card).toEqual(correctCard);
+        });
+
+        it("allows only one last guess at the end of all questions", () => {
+            completeGame();
+            expect(model.getState().hasGuessedThisQuestion).toBe(false);
+
+            const wrongCard1 = level1.deck[1]!;
+            expect(model.guessCard(wrongCard1)).toBe(false);
+            expect(model.getState().hasGuessedThisQuestion).toBe(true);
+
+            // Subsequent guess should be rejected
+            const wrongCard2 = level1.deck[2]!;
+            expect(model.guessCard(wrongCard2)).toBe(false);
         });
     });
 });

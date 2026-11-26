@@ -190,6 +190,7 @@ export class GameScreenModel {
 
             if (this.state.questionsAnswered >= this.state.questionsRequired) {
                 this.state.status = "won";
+                this.state.hasGuessedThisQuestion = false;
             }
         } else {
             this.state.strikes++;
@@ -276,17 +277,25 @@ export class GameScreenModel {
     }
 
     guessCard(card: Card): boolean {
-        if (this.state.status !== "playing") return false;
+        if (this.state.status === "lost") return false;
         if (this.state.hasGuessedThisQuestion) return false;
+        if (this.state.hiddenCard.isRevealed) return false;
         this.state.hasGuessedThisQuestion = true;
 
         if (card.id === this.hiddenCard!.id) {
             this.state.status = "won";
             this.state.hiddenCard.isRevealed = true;
+            if (this.hiddenCard) {
+                this.state.hiddenCard.card = this.hiddenCard;
+            }
             return true;
         }
         this.state.incorrectlyGuessedCards.push(card);
         return false;
+    }
+
+    getHiddenCard(): Card | null {
+        return this.hiddenCard;
     }
 
     getReward(): number {

@@ -192,17 +192,18 @@ export class GameScreenController extends ScreenController {
     }
 
     private handleGuess(card: Card) {
-        if (this.model.isWaitingForNext()) {
+        const state = this.model.getState();
+        const allQuestionsAnswered = state.questionsAnswered >= state.questionsRequired;
+        if (this.model.isWaitingForNext() && !allQuestionsAnswered) {
             return;
         }
-        const state = this.model.getState();
         if (state.hasGuessedThisQuestion) {
-            this.updateView("Already guessed this question!");
+            this.updateView("Already guessed this question!", allQuestionsAnswered);
             return;
         }
         let coins = this.resources.getCoins();
         if (coins < CHIPS_PER_GUESS) {
-            this.updateView("Not enough coins!");
+            this.updateView("Not enough coins!", allQuestionsAnswered);
             return;
         }
         coins -= CHIPS_PER_GUESS;
@@ -213,7 +214,7 @@ export class GameScreenController extends ScreenController {
             this.resources.setCoins(coins);
             this.updateView("You guessed it!", true);
         } else {
-            this.updateView("Keep trying!");
+            this.updateView("Keep trying!", allQuestionsAnswered);
         }
     }
 }

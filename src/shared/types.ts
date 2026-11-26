@@ -44,6 +44,7 @@ export interface GameState {
   // whether hidden card has been revealed
   hiddenCard: {
     isRevealed: boolean;
+    card?: Card | undefined;
   };
 
   // clues collected and current question

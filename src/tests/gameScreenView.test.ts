@@ -343,5 +343,53 @@ describe("GameScreenView - Guessing Functionality", () => {
             view.render(makeMockState({ status: "won" }), [], "You guessed it!");
             expect((view as any).guessFeedbackText?.text()).toBe("You guessed it!");
         });
+
+        it("renders a revealed card when hiddenCard is revealed", () => {
+            const revealedCard: Card = { id: "H-A", suit: "hearts", rank: "A" };
+            const fromURLSpy = vi.spyOn(Konva.Image, "fromURL");
+            fromURLSpy.mockClear();
+
+            view.render(
+                makeMockState({
+                    hiddenCard: { isRevealed: true, card: revealedCard },
+                }),
+                []
+            );
+
+            const cardNode = view.getGroup().findOne<Konva.Group>(".revealedCard");
+            expect(cardNode).toBeDefined();
+
+            const textNodes = cardNode ? cardNode.find<Konva.Text>("Text") : [];
+            const textContents = textNodes.map((t: Konva.Text) => t.text());
+            expect(textContents).toContain("A");
+            expect(textContents).toContain("♥");
+
+            // Does not request /card.png when card is revealed
+            expect(fromURLSpy).not.toHaveBeenCalledWith("/card.png", expect.any(Function));
+        });
+
+        it("enables guessing at the end of all questions even when showNext is true", () => {
+            view.render(
+                makeMockState({
+                    status: "won",
+                    questionsAnswered: 3,
+                    questionsRequired: 3,
+                    hasGuessedThisQuestion: false,
+                    hiddenCard: { isRevealed: false },
+                }),
+                [],
+                "",
+                true
+            );
+
+            expect((view as any).canGuess).toBe(true);
+
+            // Submitting a guess works
+            (view as any).guessInput = { value: "AH" };
+            (view as any).submitGuess();
+            expect(onGuess).toHaveBeenCalledWith(
+                expect.objectContaining({ id: "H-A", rank: "A", suit: "hearts" })
+            );
+        });
     });
 });

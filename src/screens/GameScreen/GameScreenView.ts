@@ -174,15 +174,20 @@ export class GameScreenView implements View {
         );
         this.setResourceText();
 
-        // Hidden card
-        Konva.Image.fromURL("/card.png", (card) => {
-            card.x(GAME_SCREEN_CONSTANTS.CARD_X);
-            card.y(GAME_SCREEN_CONSTANTS.CARD_Y);
-            card.width(GAME_SCREEN_CONSTANTS.CARD_WIDTH);
-            card.height(GAME_SCREEN_CONSTANTS.CARD_HEIGHT);
-            imageGroup.add(card);
-            this.group.getLayer()?.draw();
-        });
+        // Hidden / Revealed card
+        const cardToReveal = state.hiddenCard.card ?? state.deck[0];
+        if (state.hiddenCard.isRevealed && cardToReveal) {
+            this.addRevealedCard(imageGroup, cardToReveal);
+        } else {
+            Konva.Image.fromURL("/card.png", (card) => {
+                card.x(GAME_SCREEN_CONSTANTS.CARD_X);
+                card.y(GAME_SCREEN_CONSTANTS.CARD_Y);
+                card.width(GAME_SCREEN_CONSTANTS.CARD_WIDTH);
+                card.height(GAME_SCREEN_CONSTANTS.CARD_HEIGHT);
+                imageGroup.add(card);
+                this.group.getLayer()?.draw();
+            });
+        }
 
 
         // "Work out the probability" panel
@@ -386,11 +391,12 @@ export class GameScreenView implements View {
         const guessInputAbsX = layout.RIGHT_COLUMN_X + pad;
         const guessSubmitAbsX = guessInputAbsX + inputWidth + pad;
 
+        const allQuestionsAnswered = state.questionsAnswered >= state.questionsRequired;
         const showGuessInput = state.status === "playing" || state.status === "won";
         const canGuess =
-            !showNext &&
-            state.status === "playing" &&
-            !state.hasGuessedThisQuestion;
+            !state.hiddenCard.isRevealed &&
+            !state.hasGuessedThisQuestion &&
+            (state.status === "playing" ? !showNext : allQuestionsAnswered);
 
         this.canGuess = canGuess;
         this.wantGuessInput = showGuessInput;
@@ -1053,6 +1059,100 @@ export class GameScreenView implements View {
         this.modalOpen = true;
         this.updateInput(); // hide the HTML input so it doesn't float over the popup
         this.group.getLayer()?.draw();
+    }
+
+    private addRevealedCard(parent: Konva.Group, card: Card): void {
+        const c = GAME_SCREEN_CONSTANTS;
+        const x = c.VISIBLE_CARD_X;
+        const y = c.VISIBLE_CARD_Y;
+        const width = c.VISIBLE_CARD_WIDTH;
+        const height = c.VISIBLE_CARD_HEIGHT;
+        const cardGroup = new Konva.Group({ name: "revealedCard", x, y });
+
+        const isRed = card.suit === "hearts" || card.suit === "diamonds";
+        const color = isRed ? c.MINI_CARD_RED : c.MINI_CARD_BLACK;
+        const suitSymbol = SUIT_SYMBOLS[card.suit];
+
+        // Card base
+        cardGroup.add(
+            new Konva.Rect({
+                width,
+                height,
+                fill: "#ffffff",
+                stroke: c.OUTLINE_BUTTON_BORDER,
+                strokeWidth: 3,
+                cornerRadius: c.PANEL_RADIUS,
+                shadowColor: "rgba(0, 0, 0, 0.2)",
+                shadowBlur: 10,
+                shadowOffset: { x: 0, y: 4 },
+            })
+        );
+
+        const cornerPad = height * 0.04;
+        const rankFontSize = height * 0.12;
+        const suitFontSize = height * 0.1;
+
+        // Top-left rank and suit
+        const topLeftGroup = new Konva.Group({ x: cornerPad, y: cornerPad });
+        topLeftGroup.add(
+            new Konva.Text({
+                text: card.rank,
+                fontSize: rankFontSize,
+                fontStyle: "bold",
+                fontFamily: "Arial",
+                fill: color,
+            }),
+            new Konva.Text({
+                y: rankFontSize * 0.9,
+                text: suitSymbol,
+                fontSize: suitFontSize,
+                fontFamily: "Arial",
+                fill: color,
+            })
+        );
+        cardGroup.add(topLeftGroup);
+
+        // Bottom-right rank and suit (rotated 180 degrees)
+        const bottomRightGroup = new Konva.Group({
+            x: width - cornerPad,
+            y: height - cornerPad,
+            rotation: 180,
+        });
+        bottomRightGroup.add(
+            new Konva.Text({
+                text: card.rank,
+                fontSize: rankFontSize,
+                fontStyle: "bold",
+                fontFamily: "Arial",
+                fill: color,
+            }),
+            new Konva.Text({
+                y: rankFontSize * 0.9,
+                text: suitSymbol,
+                fontSize: suitFontSize,
+                fontFamily: "Arial",
+                fill: color,
+            })
+        );
+        cardGroup.add(bottomRightGroup);
+
+        // Center large suit symbol
+        cardGroup.add(
+            new Konva.Text({
+                x: 0,
+                y: (height - height * 0.35) / 2,
+                width,
+                height: height * 0.35,
+                text: suitSymbol,
+                fontSize: height * 0.35,
+                align: "center",
+                verticalAlign: "middle",
+                fontFamily: "Arial",
+                fill: color,
+            })
+        );
+
+        parent.add(cardGroup);
     }
 
     private makeMiniCard(card: Card, x: number, y: number): Konva.Group {
