@@ -1,4 +1,5 @@
-import { number } from "zod";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { supabase } from "../lib/supabase.ts";
 
 export const STARTING_COINS = 10;
 
@@ -21,15 +22,18 @@ export function levelPoints(won: boolean, strikes: number): number {
 /**
  * The player's coins and score, shared by every screen.
  * Created once by the App so the values stay the same across screens.
+ * Uses Supabase behind the scenes when a client / session is available.
  */
 export class PlayerResources {
     private coins: number;
     // best points earned on each level, by level id
     private bestLevelPoints = new Map<number, number>();
     private listeners: (() => void)[] = [];
+    private client: SupabaseClient | null;
 
-    constructor(startingCoins = STARTING_COINS) {
+    constructor(startingCoins = STARTING_COINS, client: SupabaseClient | null = supabase) {
         this.coins = startingCoins;
+        this.client = client;
     }
 
     getCoins(): number {
@@ -49,27 +53,99 @@ export class PlayerResources {
         return this.bestLevelPoints.get(levelId) ?? 0;
     }
 
-    earnCoins(amount: number): void {
+    /**
+     * Loads the coins from Supabase for the specified or current user.
+     * If the player does not have a row yet, one is created with the current coin balance.
+     */
+    async load(userId?: string): Promise<number> {
+        if (!this.client) {
+            return this.coins;
+        }
+
+        let targetUserId = userId;
+        if (!targetUserId) {
+            const { data: { user }, error: authError } = await this.client.auth.getUser();
+            if (authError || !user) {
+                return this.coins;
+            }
+            targetUserId = user.id;
+        }
+
+        const { data, error } = await this.client
+            .from("player_resources")
+            .select("coins")
+            .eq("user_id", targetUserId)
+            .maybeSingle();
+
+        if (error) {
+            throw error;
+        }
+
+        if (data) {
+            this.coins = data.coins;
+        } else {
+            const { error: insertError } = await this.client
+                .from("player_resources")
+                .insert({ user_id: targetUserId, coins: this.coins });
+            if (insertError) {
+                const { data: refetched } = await this.client
+                    .from("player_resources")
+                    .select("coins")
+                    .eq("user_id", targetUserId)
+                    .maybeSingle();
+                if (refetched) {
+                    this.coins = refetched.coins;
+                }
+            }
+        }
+
+        this.notify();
+        return this.coins;
+    }
+
+    async earnCoins(amount: number): Promise<void> {
         if (amount <= 0) {
             throw new RangeError("amount must be positive");
         }
 
-        this.coins += amount;
+        const previousBalance = this.coins;
+        const nextBalance = previousBalance + amount;
+
+        this.coins = nextBalance;
         this.notify();
+
+        try {
+            await this.persistCoins(previousBalance, nextBalance);
+        } catch (error) {
+            this.coins = previousBalance;
+            this.notify();
+            throw error;
+        }
     }
-    /** Sets the coins at the beginning of the game
-     * @param coins : number of coins to set
+
+    /**
+     * Sets the coins in memory.
+     * @param coins number of coins to set
      */
-    setCoins(coins: number): void{
+    setCoins(coins: number): void {
         this.coins = coins;
         this.notify();
     }
 
     /**
-     * Takes coins if the player has enough.
+     * Resets in-memory coins and level points (e.g. on user sign out).
+     */
+    reset(startingCoins = STARTING_COINS): void {
+        this.coins = startingCoins;
+        this.bestLevelPoints.clear();
+        this.notify();
+    }
+
+    /**
+     * Takes coins if the player has enough, persisting to Supabase if authenticated.
      * @returns true if the coins were spent, false if the balance was too low.
      */
-    spendCoins(amount: number): boolean {
+    async spendCoins(amount: number): Promise<boolean> {
         if (amount <= 0) {
             throw new RangeError("amount must be positive");
         }
@@ -78,9 +154,44 @@ export class PlayerResources {
             return false;
         }
 
-        this.coins -= amount;
+        const previousBalance = this.coins;
+        const nextBalance = previousBalance - amount;
+
+        this.coins = nextBalance;
         this.notify();
-        return true;
+
+        try {
+            await this.persistCoins(previousBalance, nextBalance);
+            return true;
+        } catch (error) {
+            this.coins = previousBalance;
+            this.notify();
+            throw error;
+        }
+    }
+
+    private async persistCoins(previousBalance: number, nextBalance: number): Promise<void> {
+        if (!this.client) {
+            return;
+        }
+
+        const { data: { user }, error: authError } = await this.client.auth.getUser();
+        if (authError || !user) {
+            // Unauthenticated / offline mode
+            return;
+        }
+
+        const { data, error } = await this.client
+            .from("player_resources")
+            .update({ coins: nextBalance })
+            .eq("user_id", user.id)
+            .eq("coins", previousBalance)
+            .select("coins")
+            .single();
+
+        if (error) {
+            throw error;
+        }
     }
 
     /** Records an attempt at a level, keeping only the best result. */

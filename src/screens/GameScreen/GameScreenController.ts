@@ -6,7 +6,6 @@ import { GameScreenView } from "./GameScreenView.ts";
 import { levelPoints } from "../../game/playerResources.ts";
 import type { PlayerResources } from "../../game/playerResources.ts";
 import { COST_OF_CLUE } from "../../constants.ts";
-import { saveCoins } from "../../lib/playerCoins.ts";
 import { CHIPS_PER_GUESS } from "../../game/rewardEngine.ts";
 
 /** 
@@ -110,18 +109,17 @@ export class GameScreenController extends ScreenController {
             this.updateView("Not enough coins!");
             return;
         }
-        const previousBalance = this.resources.getCoins();
-        let savedBalance: number;
-        try{
-        savedBalance = await saveCoins(previousBalance, previousBalance - COST_OF_CLUE);
-        
-        }
-        catch (error) {
+        try {
+            const spent = await this.resources.spendCoins(COST_OF_CLUE);
+            if (!spent) {
+                this.updateView("Not enough coins!");
+                return;
+            }
+        } catch (error) {
             console.error("Failed to save hint purchase", error);
             this.updateView("Could not buy hint. Please try again.");
             return;
         }
-        this.resources.setCoins(savedBalance);
         const result = this.model.buyHint(kind);
         if (result !== "bought") {
             return;

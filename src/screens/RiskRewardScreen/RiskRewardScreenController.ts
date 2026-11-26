@@ -7,7 +7,6 @@ import type { RiskRewardViewState } from "./RiskRewardScreenView.ts";
 import { PlayerResources } from "../../game/playerResources.ts";
 import { parseNumber, parseProbability } from "../../game/numberInput.ts";
 import type { ParseResult } from "../../game/numberInput.ts";
-import { loadCoins, saveCoins } from "../../lib/playerCoins.ts";
 
 const CALC_FIELDS: CalcField[] = ["risk", "reward", "expectedValue"];
 
@@ -154,22 +153,18 @@ export class RiskRewardScreenController extends ScreenController {
             return;
         }
         const banked = this.model.getChips();
-        const previousBalance = this.resources.getCoins();
-        let savedBalance: number;
         this.cashoutPending = true;
-        try{
-            savedBalance = await saveCoins(previousBalance, previousBalance + banked);
-        }
-        catch (error) {
+        try {
+            await this.resources.earnCoins(banked);
+        } catch (error) {
             console.error("Could not save cashout", error);
             this.setMessage("Could not cash out. Please try again.", "error");
             this.refresh(); 
             return;
-        } finally{
+        } finally {
             this.cashoutPending = false;
         }
         this.model.cashOut();
-        this.resources.setCoins(savedBalance);
         this.setMessage(
             `You cashed out ${banked} chips for ${banked} coins! Total game coins: ${this.resources.getCoins()}.`,
             "success"

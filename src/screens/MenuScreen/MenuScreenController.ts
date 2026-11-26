@@ -19,8 +19,9 @@ export class MenuScreenController extends ScreenController {
             () => this.handleStartClick(),
             // Risk/Reward button goes straight to the minigame
             () => this.screenSwitcher.switchToScreen({ type: "riskReward" }),
-            () => {
-                supabase.auth.signOut();
+            async () => {
+                this.resources.reset();
+                await supabase.auth.signOut();
                 this.screenSwitcher.switchToScreen({ type: "auth" });
             },
             () => this.screenSwitcher.switchToScreen({ type: "dieMiniGame" })

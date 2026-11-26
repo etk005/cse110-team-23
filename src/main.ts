@@ -12,7 +12,6 @@ import { RiskRewardScreenController } from "./screens/RiskRewardScreen/RiskRewar
 import { AuthScreenController } from "./screens/AuthScreen/AuthScreenController.ts";
 import { DieMiniGameScreenController } from "./screens/DieMiniScreen/DieMiniScreenController.ts";
 import { supabase } from "./lib/supabase.ts";
-import {loadCoins} from "./lib/playerCoins.ts";
 
 // Main application class that manages the screens and navigation
 class App implements ScreenSwitcher {
@@ -160,8 +159,7 @@ async function loadStartupScreen(resources: PlayerResources): Promise<Screen> {
     }
 
     try{
-        const coins = await loadCoins(user.id);
-        resources.setCoins(coins);
+        await resources.load(user.id);
         return { type: "menu" };
     } catch (error) {
         console.error("Error loading coins:", error);
